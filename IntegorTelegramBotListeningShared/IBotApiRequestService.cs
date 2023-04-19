@@ -11,6 +11,9 @@ namespace IntegorTelegramBotListeningShared
 	public interface IBotApiRequestService
 	{
 		Task<HttpResponseMessage> RequestApiAsync(
-			string botToken, string apiMethod, HttpMethod httpMethod, Stream body, IEnumerable<KeyValuePair<string, string>>? queryPrarameters = null);
+			string botToken, string apiMethod, HttpMethod httpMethod,
+			Stream body,
+			string? contentMediaType = null,
+			IEnumerable<KeyValuePair<string, string>>? queryParameters = null);
 	}
 }

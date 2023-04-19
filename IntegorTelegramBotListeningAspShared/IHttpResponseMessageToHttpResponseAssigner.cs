@@ -11,6 +11,6 @@ namespace IntegorTelegramBotListeningAspShared
 {
 	public interface IHttpResponseMessageToHttpResponseAssigner
 	{
-		Task AssignAsync(HttpResponse httpResponse, HttpResponseMessage responseMessage);
+		Task AssignAsync(HttpResponse target, HttpResponseMessage source);
 	}
 }

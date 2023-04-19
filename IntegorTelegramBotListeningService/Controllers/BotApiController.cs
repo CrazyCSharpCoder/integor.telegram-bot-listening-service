@@ -1,6 +1,6 @@
-﻿using System;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using System.IO;
 using System.Net.Http;
 
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +12,6 @@ using IntegorTelegramBotListeningAspShared;
 namespace IntegorTelegramBotListeningService.Controllers
 {
 	[ApiController]
-	[Route("bot")]
 	public class BotApiController : ControllerBase
 	{
 		private IBotApiRequestService _requestService;
@@ -26,26 +25,16 @@ namespace IntegorTelegramBotListeningService.Controllers
 			_responseToActionResult = responseToActionResult;
         }
 
-        [Route("{token}/{method}")]
+        [Route("bot{token}/{method}")]
 		public async Task ListenBotAsync(string token, string method)
 		{
-			HttpResponseMessage response;
 			var queryParams = Request.Query.Select(pairQueryParam => new KeyValuePair<string, string>(pairQueryParam.Key, pairQueryParam.Value));
-			
-			try
-			{
-				response = await _requestService.RequestApiAsync(
-					token, method, new HttpMethod(Request.Method), Request.Body, queryParams);
-			}
-			catch (Exception exc)
-			{
-				throw;
-			}
+			string? contentMediaType = Request.ContentType?.Split(";", 2)[0].Trim();
+
+			using HttpResponseMessage response = await _requestService.RequestApiAsync(
+				token, method, new HttpMethod(Request.Method), Request.Body, contentMediaType, queryParams);
 
 			await _responseToActionResult.AssignAsync(Response, response);
-			await Response.StartAsync();
-
-			response.Dispose();
 		}
 	}
 }

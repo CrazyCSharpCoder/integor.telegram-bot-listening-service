@@ -15,18 +15,29 @@ namespace IntegorTelegramBotListeningAspServices
 {
 	public class StandardHttpResponseMessageToHttpResponseAssigner : IHttpResponseMessageToHttpResponseAssigner
 	{
-		public async Task AssignAsync(HttpResponse httpResponse, HttpResponseMessage responseMessage)
+		public async Task AssignAsync(HttpResponse target, HttpResponseMessage source)
 		{
-			httpResponse.StatusCode = (int)responseMessage.StatusCode;
+			target.StatusCode = (int)source.StatusCode;
 
-			CopyHeaders(httpResponse.Headers, responseMessage.Headers);
-			await responseMessage.Content.CopyToAsync(httpResponse.Body);
+			AssignHeaders(target.Headers, source.Headers);
+			await AssignContentAsync(target, source.Content);
 		}
 
-		private void CopyHeaders(IHeaderDictionary target, HttpResponseHeaders source)
+		private void AssignHeaders(IHeaderDictionary target, HttpResponseHeaders source)
 		{
 			foreach (KeyValuePair<string, IEnumerable<string>> headerToValues in source)
 				target[headerToValues.Key] = new StringValues(headerToValues.Value.ToArray());
+		}
+
+		private async Task AssignContentAsync(HttpResponse targetResponse, HttpContent contentSource)
+		{
+			if (contentSource.Headers.ContentType != null)
+				targetResponse.ContentType = contentSource.Headers.ContentType.MediaType;
+
+			if (contentSource.Headers.ContentLength != null)
+				targetResponse.ContentLength = contentSource.Headers.ContentLength;
+
+			await contentSource.CopyToAsync(targetResponse.Body);
 		}
 	}
 }
