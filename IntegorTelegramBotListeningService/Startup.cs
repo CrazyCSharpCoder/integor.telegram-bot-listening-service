@@ -4,12 +4,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Builder;
 
 using IntegorTelegramBotListeningShared;
+using IntegorTelegramBotListeningShared.ApiContent;
 using IntegorTelegramBotListeningShared.Configuration;
 
 using IntegorTelegramBotListeningServices;
-
-using IntegorTelegramBotListeningAspShared;
-using IntegorTelegramBotListeningAspServices;
+using IntegorTelegramBotListeningServices.ApiContent;
 
 namespace IntegorTelegramBotListeningService
 {
@@ -30,7 +29,7 @@ namespace IntegorTelegramBotListeningService
 
 			services.Configure<TelegramBotApiConfiguration>(_telegramBotApiConfiguration);
 
-			services.AddSingleton<IBotApiRequestService, StandardBotApiRequestService>();
+			services.AddSingleton<IBotApiHttpContentFactory, StandardBotApiHttpContentFactory>();
 			services.AddSingleton<IHttpResponseMessageToHttpResponseAssigner, StandardHttpResponseMessageToHttpResponseAssigner>();
 		}
 

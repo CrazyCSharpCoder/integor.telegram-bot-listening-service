@@ -9,9 +9,9 @@ using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 
-using IntegorTelegramBotListeningAspShared;
+using IntegorTelegramBotListeningShared;
 
-namespace IntegorTelegramBotListeningAspServices
+namespace IntegorTelegramBotListeningServices
 {
 	public class StandardHttpResponseMessageToHttpResponseAssigner : IHttpResponseMessageToHttpResponseAssigner
 	{
@@ -37,7 +37,10 @@ namespace IntegorTelegramBotListeningAspServices
 			if (contentSource.Headers.ContentLength != null)
 				targetResponse.ContentLength = contentSource.Headers.ContentLength;
 
-			await contentSource.CopyToAsync(targetResponse.Body);
+			//await contentSource.CopyToAsync(targetResponse.Body);
+
+			string content = await contentSource.ReadAsStringAsync();
+			await targetResponse.WriteAsync(content);
 		}
 	}
 }

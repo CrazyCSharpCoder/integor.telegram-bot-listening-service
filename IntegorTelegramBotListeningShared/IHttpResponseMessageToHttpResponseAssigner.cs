@@ -7,7 +7,7 @@ using System.Net.Http;
 
 using Microsoft.AspNetCore.Http;
 
-namespace IntegorTelegramBotListeningAspShared
+namespace IntegorTelegramBotListeningShared
 {
 	public interface IHttpResponseMessageToHttpResponseAssigner
 	{

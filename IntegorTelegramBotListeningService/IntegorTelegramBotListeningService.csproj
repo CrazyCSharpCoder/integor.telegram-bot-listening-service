@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IntegorTelegramBotListeningAspServices\IntegorTelegramBotListeningAspServices.csproj" />
     <ProjectReference Include="..\IntegorTelegramBotListeningServices\IntegorTelegramBotListeningServices.csproj" />
   </ItemGroup>
 
