@@ -13,6 +13,6 @@ namespace IntegorTelegramBotListeningShared.ApiContent
     public interface IBotApiHttpContentFactory
 	{
 		HttpContent CreateDefaultContent(Stream body, string? mediaType);
-		HttpContent CreateMultipartFormContent(IEnumerable<MultipartFormContent> contentParts, string boundary);
+		HttpContent CreateMultipartFormContent(IEnumerable<MultipartFormContentDescriptor> contentParts, string boundary);
     }
 }

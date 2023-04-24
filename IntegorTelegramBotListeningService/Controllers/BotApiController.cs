@@ -18,43 +18,17 @@ namespace IntegorTelegramBotListeningService.Controllers
 	[ApiController]
 	public class BotApiController : ControllerBase
 	{
-		private class BotApiActionDescriptor
-		{
-			public string Domain { get; }
-
-			public string BotToken { get; }
-			public string ApiMethod { get; }
-			public HttpMethod HttpMethod { get; }
-
-			public string? QuestionQueryString { get; }
-
-            public BotApiActionDescriptor(
-				string domain, string token, string apiMethod,
-				HttpMethod httpMethod, string? questionQueryString)
-            {
-				Domain = domain;
-
-				BotToken = token;
-				ApiMethod = apiMethod;
-				HttpMethod = httpMethod;
-
-				QuestionQueryString = questionQueryString;
-            }
-
-			public string ToUri()
-			{
-				return Path.Combine(Domain, $"bot{BotToken}", ApiMethod) + QuestionQueryString;
-			}
-        }
-
 		private IBotApiHttpContentFactory _contentFactory;
+		private ITelegramBotApiGate _api;
 		private IHttpResponseMessageToHttpResponseAssigner _responseToAsp;
 
 		public BotApiController(
 			IBotApiHttpContentFactory contentFactory,
+			ITelegramBotApiGate api,
 			IHttpResponseMessageToHttpResponseAssigner responseToActionResult)
         {
 			_contentFactory = contentFactory;
+			_api = api;
 			_responseToAsp = responseToActionResult;
         }
 
@@ -63,63 +37,45 @@ namespace IntegorTelegramBotListeningService.Controllers
 		{
 			string? mediaType = Request.ContentType == null ? null : GetMediaType(Request.ContentType);
 
-			// TODO place domain to config file
-			BotApiActionDescriptor apiAction = new BotApiActionDescriptor(
-				"https://api.telegram.org/", botToken, apiMethod,
-				new HttpMethod(Request.Method), Request.QueryString.Value);
-
-			HttpResponseMessage response;
+			HttpContent content;
+			IEnumerable<MultipartFormContentDescriptor>? multipartContent = null;
 
 			if (Request.HasFormContentType)
-				response = await TranslateMultipartFormAsync(apiAction, Request.Form, Request.GetMultipartBoundary());
+			{
+				multipartContent = await ExtractFormValuesAsync(Request.Form);
+				multipartContent = multipartContent.Concat(ExtractFormFiles(Request.Form.Files));
+
+				content = _contentFactory.CreateMultipartFormContent(multipartContent, Request.GetMultipartBoundary());
+			}
 			else
-				response = await TranslateDefaultAsync(apiAction, Request.Body, mediaType);			
+			{
+				content = _contentFactory.CreateDefaultContent(Request.Body, mediaType);
+			}
+
+			// TODO get rid of First()
+			Dictionary<string, string> query = Request.Query.ToDictionary(
+				queryToValue => queryToValue.Key, queryToValue => queryToValue.Value.First());
+
+			using HttpResponseMessage response = await _api.SendAsync(
+				content, new HttpMethod(Request.Method), botToken, apiMethod, query);
 
 			await _responseToAsp.AssignAsync(Response, response);
 
-			response.Dispose();
+			content.Dispose();
+
+			if (multipartContent == null)
+				return;
+
+			foreach (MultipartFormContentDescriptor disposedMultipart in multipartContent)
+				await disposedMultipart.DisposeAsync();
 		}
 
 		private string GetMediaType(string contentType)
 			=> contentType.Split(";", 2).First().Trim();
 
-		private async Task<HttpResponseMessage> TranslateMultipartFormAsync(
-			BotApiActionDescriptor apiAction, IFormCollection formData, string boundary)
+		private async Task<IEnumerable<MultipartFormContentDescriptor>> ExtractFormValuesAsync(IFormCollection form)
 		{
-			IEnumerable<MultipartFormContent> multipartContentParts = await CopyFormValues(formData);
-			multipartContentParts = multipartContentParts.Concat(CopyFiles(formData.Files));
-
-			using HttpContent content = _contentFactory.CreateMultipartFormContent(multipartContentParts, boundary);
-			HttpResponseMessage response = await SendAsync(apiAction, content);
-
-			foreach (MultipartFormContent multipartContent in multipartContentParts)
-				await multipartContent.DisposeAsync();
-
-			return response;
-		}
-
-		private async Task<HttpResponseMessage> TranslateDefaultAsync(
-			BotApiActionDescriptor apiAction, Stream body, string? mediaType)
-		{
-			using HttpContent content = _contentFactory.CreateDefaultContent(body, mediaType);
-			return await SendAsync(apiAction, content);
-		}
-
-		private async Task<HttpResponseMessage> SendAsync(
-			BotApiActionDescriptor apiAction, HttpContent content)
-		{
-			using HttpClient client = new HttpClient();
-			using HttpRequestMessage request = new HttpRequestMessage(apiAction.HttpMethod, apiAction.ToUri())
-			{
-				Content = content
-			};
-
-			return await client.SendAsync(request);
-		}
-
-		private async Task<IEnumerable<MultipartFormContent>> CopyFormValues(IFormCollection form)
-		{
-			List<MultipartFormContent> content = new List<MultipartFormContent>();
+			List<MultipartFormContentDescriptor> content = new List<MultipartFormContentDescriptor>();
 
 			foreach (var formValue in form)
 			{
@@ -132,8 +88,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 				body.Position = 0;
 
-				MultipartFormContent multipartContent =
-					new MultipartFormContent("text/plain", formValue.Key, body);
+				MultipartFormContentDescriptor multipartContent =
+					new MultipartFormContentDescriptor("text/plain", formValue.Key, body);
 
 				content.Add(multipartContent);
 			}
@@ -141,16 +97,16 @@ namespace IntegorTelegramBotListeningService.Controllers
 			return content;
 		}
 
-		private IEnumerable<MultipartFormContent> CopyFiles(IFormFileCollection files)
+		private IEnumerable<MultipartFormContentDescriptor> ExtractFormFiles(IFormFileCollection files)
 		{
-			List<MultipartFormContent> content = new List<MultipartFormContent>();
+			List<MultipartFormContentDescriptor> content = new List<MultipartFormContentDescriptor>();
 
 			foreach (var file in files)
 			{
 				Stream body = file.OpenReadStream();
 
-				MultipartFormContent multipartContent =
-					new MultipartFormContent("application/octet-stream", file.Name, body, file.FileName);
+				MultipartFormContentDescriptor multipartContent =
+					new MultipartFormContentDescriptor("application/octet-stream", file.Name, body, file.FileName);
 
 				content.Add(multipartContent);
 			}

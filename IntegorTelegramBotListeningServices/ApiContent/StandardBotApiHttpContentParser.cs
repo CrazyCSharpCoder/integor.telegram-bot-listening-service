@@ -16,11 +16,11 @@ namespace IntegorTelegramBotListeningServices.ApiContent
 	public class StandardBotApiHttpContentParser : IBotApiHttpContentFactory
 	{
 		public HttpContent CreateMultipartFormContent(
-			IEnumerable<MultipartFormContent> contentParts, string boundary)
+			IEnumerable<MultipartFormContentDescriptor> contentParts, string boundary)
 		{
 			MultipartFormDataContent content = new MultipartFormDataContent(boundary);
 
-			foreach (MultipartFormContent contentPart in contentParts)
+			foreach (MultipartFormContentDescriptor contentPart in contentParts)
 			{
 				StreamContent addedContent = new StreamContent(contentPart.Body);
 				addedContent.Headers.ContentType = new MediaTypeHeaderValue(contentPart.ContentType);

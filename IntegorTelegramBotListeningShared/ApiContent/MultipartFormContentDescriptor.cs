@@ -8,7 +8,7 @@ using System.IO;
 
 namespace IntegorTelegramBotListeningShared.ApiContent
 {
-	public class MultipartFormContent : IDisposable, IAsyncDisposable
+	public class MultipartFormContentDescriptor : IDisposable, IAsyncDisposable
 	{
 		public string ContentType { get; }
 
@@ -17,7 +17,7 @@ namespace IntegorTelegramBotListeningShared.ApiContent
 
 		public Stream Body { get; }
 
-        public MultipartFormContent(
+        public MultipartFormContentDescriptor(
 			string contentType, string name, Stream body, string? fileName = null)
         {
             ContentType = contentType;

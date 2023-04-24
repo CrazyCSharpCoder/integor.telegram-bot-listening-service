@@ -13,8 +13,6 @@ using IntegorTelegramBotListeningServices.ApiContent;
 
 namespace IntegorTelegramBotListeningService
 {
-	using ApiRetranslation;
-
 	public class Startup
 	{
 		private IConfiguration _telegramBotApiConfiguration;
@@ -28,13 +26,16 @@ namespace IntegorTelegramBotListeningService
 
 		public void ConfigureServices(IServiceCollection services)
 		{
-			services.AddScoped<TelegramBotApiRetranslator>();
+			//services.AddScoped<TelegramBotApiRetranslator>();
 
 			services.AddControllers();
 
 			services.Configure<TelegramBotApiConfiguration>(_telegramBotApiConfiguration);
 
+			services.AddSingleton<ITelegramBotApiUriBuilder, StandardTelegramBotApiUriBuilder>();
+
 			services.AddSingleton<IBotApiHttpContentFactory, StandardBotApiHttpContentParser>();
+			services.AddSingleton<ITelegramBotApiGate, StandardTelegramBotApiGate>();
 			services.AddSingleton<IHttpResponseMessageToHttpResponseAssigner, StandardHttpResponseMessageToHttpResponseAssigner>();
 		}
 
