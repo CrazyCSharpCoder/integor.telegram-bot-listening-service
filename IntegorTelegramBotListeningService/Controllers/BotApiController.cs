@@ -22,14 +22,20 @@ namespace IntegorTelegramBotListeningService.Controllers
 		private ITelegramBotApiGate _api;
 		private IHttpResponseMessageToHttpResponseAssigner _responseToAsp;
 
+		private ITelegramBotEventsAggregator _eventsAggregator;
+
 		public BotApiController(
 			IBotApiHttpContentFactory contentFactory,
 			ITelegramBotApiGate api,
-			IHttpResponseMessageToHttpResponseAssigner responseToActionResult)
+			IHttpResponseMessageToHttpResponseAssigner responseToActionResult,
+
+			ITelegramBotEventsAggregator eventsAggregator)
         {
 			_contentFactory = contentFactory;
 			_api = api;
 			_responseToAsp = responseToActionResult;
+
+			_eventsAggregator = eventsAggregator;
         }
 
 		[Route("bot{botToken}/{apiMethod}")]
@@ -58,6 +64,16 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 			using HttpResponseMessage response = await _api.SendAsync(
 				content, new HttpMethod(Request.Method), botToken, apiMethod, query);
+
+			string? responseMediaType = response.Content.Headers.ContentType?.MediaType;
+
+			if (response.IsSuccessStatusCode && _eventsAggregator.AllowAggregation(botToken, apiMethod, responseMediaType))
+			{
+				Stream responseBody = await response.Content.ReadAsStreamAsync();
+
+				await _eventsAggregator.AggregateAsync(responseBody);
+				responseBody.Position = 0;
+			}
 
 			await _responseToAsp.AssignAsync(Response, response);
 

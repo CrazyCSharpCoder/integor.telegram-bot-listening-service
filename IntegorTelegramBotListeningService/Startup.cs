@@ -37,6 +37,8 @@ namespace IntegorTelegramBotListeningService
 			services.AddSingleton<IBotApiHttpContentFactory, StandardBotApiHttpContentParser>();
 			services.AddSingleton<ITelegramBotApiGate, StandardTelegramBotApiGate>();
 			services.AddSingleton<IHttpResponseMessageToHttpResponseAssigner, StandardHttpResponseMessageToHttpResponseAssigner>();
+
+			services.AddSingleton<ITelegramBotEventsAggregator, TelegramBotUpdatesAggregator>();
 		}
 
         public void Configure(IApplicationBuilder app)
