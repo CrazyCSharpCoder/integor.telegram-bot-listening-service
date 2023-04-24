@@ -8,19 +8,13 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 
 using IntegorTelegramBotListeningShared.ApiContent;
 
 namespace IntegorTelegramBotListeningServices.ApiContent
 {
-	public class StandardBotApiHttpContentFactory : IBotApiHttpContentFactory
+	public class StandardBotApiHttpContentParser : IBotApiHttpContentFactory
 	{
-		public HttpContent CreateJsonContent(JsonElement? body)
-		{
-			return JsonContent.Create(body);
-		}
-
 		public HttpContent CreateMultipartFormContent(
 			IEnumerable<MultipartFormContent> contentParts, string boundary)
 		{
@@ -31,18 +25,16 @@ namespace IntegorTelegramBotListeningServices.ApiContent
 				StreamContent addedContent = new StreamContent(contentPart.Body);
 				addedContent.Headers.ContentType = new MediaTypeHeaderValue(contentPart.ContentType);
 
-				if (contentPart.FileName == null)
-				{
-					content.Add(addedContent, contentPart.Name);
-					continue;
-				}
+				ContentDispositionHeaderValue contentDisposition = new ContentDispositionHeaderValue("form-data");
+				contentDisposition.Parameters.Add(new NameValueHeaderValue("name", contentPart.Name));
 
-				string sentFilename = new string(
-					Encoding.UTF8.GetBytes(contentPart.FileName)
-					.Select(b => (char)b)
-					.ToArray());
+				if (contentPart.FileName != null)
+					contentDisposition.Parameters.Add(new NameValueHeaderValue("filename", contentPart.FileName));
 
-				content.Add(addedContent, contentPart.Name, sentFilename);
+				addedContent.Headers.ContentDisposition = contentDisposition;
+
+				// TODO научиться сохранять имена на кириллице
+				content.Add(addedContent);
 			}
 
 			return content;
