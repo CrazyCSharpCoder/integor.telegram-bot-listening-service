@@ -2,14 +2,14 @@
 using Microsoft.Extensions.Configuration;
 
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 
 using IntegorTelegramBotListeningShared;
+using IntegorTelegramBotListeningShared.ApiContent;
 using IntegorTelegramBotListeningShared.Configuration;
 
 using IntegorTelegramBotListeningServices;
-
-using IntegorTelegramBotListeningAspShared;
-using IntegorTelegramBotListeningAspServices;
+using IntegorTelegramBotListeningServices.ApiContent;
 
 namespace IntegorTelegramBotListeningService
 {
@@ -26,11 +26,16 @@ namespace IntegorTelegramBotListeningService
 
 		public void ConfigureServices(IServiceCollection services)
 		{
+			//services.AddScoped<TelegramBotApiRetranslator>();
+
 			services.AddControllers();
 
 			services.Configure<TelegramBotApiConfiguration>(_telegramBotApiConfiguration);
 
-			services.AddSingleton<IBotApiRequestService, StandardBotApiRequestService>();
+			services.AddSingleton<ITelegramBotApiUriBuilder, StandardTelegramBotApiUriBuilder>();
+
+			services.AddSingleton<IBotApiHttpContentFactory, StandardBotApiHttpContentParser>();
+			services.AddSingleton<ITelegramBotApiGate, StandardTelegramBotApiGate>();
 			services.AddSingleton<IHttpResponseMessageToHttpResponseAssigner, StandardHttpResponseMessageToHttpResponseAssigner>();
 		}
 
@@ -41,6 +46,18 @@ namespace IntegorTelegramBotListeningService
 			{
 				endpoints.MapControllers();
 			});
+
+			//RouteHandler routeHandler = new RouteHandler(async context =>
+			//{
+			//	await context.RequestServices.GetRequiredService<TelegramBotApiRetranslator>().Invoke(context);
+			//});
+
+			//IRouter router = new RouteBuilder(app, routeHandler)
+			//	.MapRoute("telegramBotApi", "bot{token}/{apiMethod}")
+			//	.MapRoute("non-declared", "{*any}")
+			//	.Build();
+
+			//app.UseRouter(router);
 		}
 	}
 }
