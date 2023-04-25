@@ -2,23 +2,38 @@
 using Microsoft.Extensions.Configuration;
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Routing;
+
+using Microsoft.EntityFrameworkCore;
 
 using IntegorTelegramBotListeningShared;
-using IntegorTelegramBotListeningShared.ApiContent;
 using IntegorTelegramBotListeningShared.Configuration;
 
+using IntegorTelegramBotListeningShared.ApiRetranslation;
+using IntegorTelegramBotListeningShared.ApiRetranslation.ApiContent;
+
+using IntegorTelegramBotListeningShared.EventsAggregation;
+
 using IntegorTelegramBotListeningServices;
-using IntegorTelegramBotListeningServices.ApiContent;
+using IntegorTelegramBotListeningServices.ApiRetranslation;
+using IntegorTelegramBotListeningServices.ApiRetranslation.ApiContent;
+
+using IntegorTelegramBotListeningServices.DataContext;
+using IntegorTelegramBotListeningServices.EventsAggregation;
 
 namespace IntegorTelegramBotListeningService
 {
-	public class Startup
+	using Mapper.Profiles;
+
+    public class Startup
 	{
+		public IConfiguration Configuration { get; }
+
 		private IConfiguration _telegramBotApiConfiguration;
 
-        public Startup()
+        public Startup(IConfiguration configuration)
         {
+			Configuration = configuration;
+
 			_telegramBotApiConfiguration = new ConfigurationBuilder()
 				.AddJsonFile("telegram_bot_api_config.json")
 				.Build();
@@ -39,6 +54,22 @@ namespace IntegorTelegramBotListeningService
 			services.AddSingleton<IHttpResponseMessageToHttpResponseAssigner, StandardHttpResponseMessageToHttpResponseAssigner>();
 
 			services.AddSingleton<ITelegramBotEventsAggregator, TelegramBotUpdatesAggregator>();
+
+			services.AddDbContext<IntegorTelegramBotListeningDataContext>(
+				options =>
+				{
+					options.UseNpgsql(Configuration.GetConnectionString("IntegorTelegramBotEventsDatabase"));
+					options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+				});
+
+			services.AddScoped<IBotsManagementService, EntityFrameworkBotsManagementService>();
+			services.AddScoped<IUsersAggregationService, EntityFrameworkUsersAggregationService>();
+			services.AddScoped<IMessagesAggregationService, EntityFrameworkMessagesAggregationService>();
+
+			services.AddAutoMapper(
+				typeof(TelegramBotMapperProfile),
+				typeof(TelegramUserMapperProfile),
+				typeof(TelegramMessageMapperProfile));
 		}
 
         public void Configure(IApplicationBuilder app)

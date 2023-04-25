@@ -9,6 +9,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IntegorTelegramBotListening
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IntegorTelegramBotListeningServices", "IntegorTelegramBotListeningServices\IntegorTelegramBotListeningServices.csproj", "{B2F863BB-DAAA-4C77-9BB8-1384DF59D261}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IntegorTelegramBotListeningModel", "IntegorTelegramBotListeningModel\IntegorTelegramBotListeningModel.csproj", "{E3DAD109-163D-427F-ABA4-C1D33F1C5FA2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{43BFE2F7-F908-4E64-BA03-BFE1A2B03429}"
+	ProjectSection(SolutionItems) = preProject
+		docker-compose.yml = docker-compose.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +34,10 @@ Global
 		{B2F863BB-DAAA-4C77-9BB8-1384DF59D261}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2F863BB-DAAA-4C77-9BB8-1384DF59D261}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2F863BB-DAAA-4C77-9BB8-1384DF59D261}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E3DAD109-163D-427F-ABA4-C1D33F1C5FA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3DAD109-163D-427F-ABA4-C1D33F1C5FA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E3DAD109-163D-427F-ABA4-C1D33F1C5FA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3DAD109-163D-427F-ABA4-C1D33F1C5FA2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

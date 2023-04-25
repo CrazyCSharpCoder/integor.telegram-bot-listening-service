@@ -11,11 +11,12 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 
 using IntegorTelegramBotListeningShared;
-using IntegorTelegramBotListeningShared.ApiContent;
+using IntegorTelegramBotListeningShared.ApiRetranslation;
+using IntegorTelegramBotListeningShared.ApiRetranslation.ApiContent;
 
 namespace IntegorTelegramBotListeningService.Controllers
 {
-	[ApiController]
+    [ApiController]
 	public class BotApiController : ControllerBase
 	{
 		private IBotApiHttpContentFactory _contentFactory;
