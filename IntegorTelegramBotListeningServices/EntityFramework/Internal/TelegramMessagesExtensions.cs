@@ -4,14 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using IntegorTelegramBotListeningModel;
-
-namespace IntegorTelegramBotListeningServices.DataContext.Internal
+namespace IntegorTelegramBotListeningServices.EntityFramework.Internal
 {
+	using Model;
+
 	internal static class TelegramMessagesExtensions
 	{
-		public static IQueryable<TelegramMessage> GetMessagesOfBot(
-			this IQueryable<TelegramMessage> messages, int botId)
+		public static IQueryable<EfTelegramMessage> GetMessagesOfBot(
+			this IQueryable<EfTelegramMessage> messages, int botId)
 			=> messages.Where(msg => msg.RelatedBotId == botId);
 	}
 }

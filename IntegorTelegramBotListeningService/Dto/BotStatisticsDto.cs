@@ -1,4 +1,4 @@
-﻿using IntegorTelegramBotListeningShared.Dto;
+﻿using IntegorTelegramBotListeningDto;
 
 namespace IntegorTelegramBotListeningService.Dto
 {

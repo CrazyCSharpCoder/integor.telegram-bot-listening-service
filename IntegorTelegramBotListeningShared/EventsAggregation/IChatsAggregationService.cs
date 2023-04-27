@@ -8,9 +8,9 @@ using IntegorTelegramBotListeningDto;
 
 namespace IntegorTelegramBotListeningShared.EventsAggregation
 {
-	public interface IUsersAggregationService
+	public interface IChatsAggregationService
 	{
-		Task<TelegramUserInfoDto?> GetAsync(long id);
-		Task<TelegramUserInfoDto> AddOrUpdateAsync(TelegramUserInfoDto user);
+		Task<TelegramChatInfoDto> AddAsync(TelegramChatInfoDto chat);
+		Task<TelegramChatInfoDto?> GetAsync(long id);
 	}
 }

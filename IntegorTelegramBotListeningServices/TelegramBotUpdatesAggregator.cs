@@ -6,22 +6,62 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.IO;
 
+using AutoMapper;
+
+using IntegorTelegramBotListeningModel;
+using IntegorTelegramBotListeningDto;
+
 using IntegorTelegramBotListeningShared;
+using IntegorTelegramBotListeningShared.EventsAggregation;
 
 namespace IntegorTelegramBotListeningServices
 {
+	using JsonDeserialization.Converters;
+	using JsonDeserialization.NamingPolicies;
+
+	using JsonDeserialization.Internal;
+
 	public class TelegramBotUpdatesAggregator : ITelegramBotEventsAggregator
 	{
 		private const string _getUpdatesMethod = "getUpdates";
 
 		private string _botToken = null!;
 
-		public bool AllowAggregation(string botToken, string apiMethod, string? mediaType)
+		private IBotsManagementService _botsManagement;
+
+		private IChatsAggregationService _chatsAggregator;
+		private IUsersAggregationService _usersAggregator;
+		private IMessagesAggregationService _messagesAggregator;
+
+		private IMapper _mapper;
+
+		public TelegramBotUpdatesAggregator(
+			IBotsManagementService botsManagement,
+
+			IChatsAggregationService chatsAggregator,
+			IUsersAggregationService usersAggregator,
+			IMessagesAggregationService messagesAggregator,
+			
+			IMapper mapper)
+        {
+			_botsManagement = botsManagement;
+
+			_chatsAggregator = chatsAggregator;
+			_usersAggregator = usersAggregator;
+			_messagesAggregator = messagesAggregator;
+
+			_mapper = mapper;
+        }
+
+        public async Task<bool> AllowAggregationAsync(string botToken, string apiMethod, string? mediaType)
 		{
 			if (apiMethod.ToLower() != _getUpdatesMethod.ToLower())
 				return false;
 
 			if (mediaType != "application/json")
+				return false;
+
+			if (await _botsManagement.GetByTokenAsync(botToken) == null)
 				return false;
 
 			_botToken = botToken;
@@ -31,26 +71,69 @@ namespace IntegorTelegramBotListeningServices
 
 		public async Task AggregateAsync(Stream body)
 		{
-			JsonSerializerOptions serializerOptions = new JsonSerializerOptions()
+			// Если бот не зарегистрирован, нельзя агрегировать его сообщения
+			TelegramBotInfoDto? bot = await _botsManagement.GetByTokenAsync(_botToken);
+
+			if (bot == null)
+				return;
+
+			// Десериализация json'а с обновлениями
+			JsonSerializerOptions serializerOptions = GetSerializerOptions();
+			JsonElement jsonBody = await JsonSerializer.DeserializeAsync<JsonElement>(body, serializerOptions);
+
+			if (!jsonBody.GetProperty("ok").GetBoolean())
+				return;
+
+			JsonElement.ArrayEnumerator updates = jsonBody.GetProperty("result").EnumerateArray();
+
+			IEnumerable<JsonElement.ObjectEnumerator> updateProps = updates
+				.Select(update => update.EnumerateObject());
+
+			IEnumerable<TelegramMessageInfoDto> messages = updateProps
+				.Select(updateProps => JsonElementHelpers.TryGetPropertyCaseInsensitive(updateProps, "message"))
+				.Where(messagePropCheck => messagePropCheck != null)
+
+				.Select(messageProp => JsonElementHelpers
+					.TryDeserializeJson<TelegramMessageInfoDto>(
+						((JsonProperty)messageProp!).Value, serializerOptions))
+				.Where(messageCheck => messageCheck != null)!;
+
+			// Агрегирование сообщений
+			foreach (TelegramMessageInfoDto message in messages)
+				await AggregateMessageAsync(bot.Id, message);
+		}
+
+		private JsonSerializerOptions GetSerializerOptions()
+		{
+			JsonSerializerOptions options = new JsonSerializerOptions()
 			{
-				PropertyNameCaseInsensitive = true
+				PropertyNameCaseInsensitive = true,
+				PropertyNamingPolicy = new SnakeCaseJsonNamingPolicy()
 			};
-			JsonElement jsonRoot = await JsonSerializer.DeserializeAsync<JsonElement>(body, serializerOptions);
 
-			if (!jsonRoot.TryGetProperty("ok", out JsonElement ok) || !ok.GetBoolean())
-				return;
+			options.Converters.Add(new UnixDateTimeJsonConverter());
 
-			if (!jsonRoot.TryGetProperty("result", out JsonElement result) || result.GetArrayLength() == 0)
-				return;
+			return options;
+		}
 
-			string updatesJson = JsonSerializer.Serialize(result, serializerOptions);
+		private async Task AggregateMessageAsync(int botId, TelegramMessageInfoDto message)
+		{
+			TelegramMessageInfoDto? replyToMessage = message.ReplyToMessage;
 
-			// TODO add to database
-			string logMessage =
-				$"Bot {_botToken}\n:" +
-				$"{updatesJson}\n";
+			if (replyToMessage != null && await _messagesAggregator.GetAsync(replyToMessage.Chat.Id, replyToMessage.MessageId) == null)
+				await AggregateMessageAsync(botId, replyToMessage);
 
-			await Console.Out.WriteLineAsync(logMessage);
+			if (await _chatsAggregator.GetAsync(message.Chat.Id) == null)
+				await _chatsAggregator.AddAsync(message.Chat);
+
+			if (message.From != null)
+				await _usersAggregator.AddOrUpdateAsync(message.From);
+
+			TelegramMessage addedMessageModel =
+				_mapper.Map<TelegramMessageInfoDto, TelegramMessage>(message);
+			addedMessageModel.RelatedBotId = botId;
+
+			await _messagesAggregator.AddAsync(addedMessageModel);
 		}
 	}
 }

@@ -18,7 +18,5 @@ namespace IntegorTelegramBotListeningModel
 
 		public DateTime CreatedDate { get; set; }
 		public DateTime UpdatedDate { get; set; }
-
-		public virtual ICollection<TelegramMessage> RelatedMessages { get; set; } = null!;
 	}
 }

@@ -4,8 +4,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
+using IntegorTelegramBotListeningDto;
+
 using IntegorTelegramBotListeningShared;
-using IntegorTelegramBotListeningShared.Dto;
 using IntegorTelegramBotListeningShared.EventsAggregation;
 
 namespace IntegorTelegramBotListeningService.Controllers
@@ -37,17 +38,21 @@ namespace IntegorTelegramBotListeningService.Controllers
 				// TODO replace with json
 				return NotFound();
 
-			int totalEvents = await _messagesAggregator.GetMessagesCountAsync(bot.Id);
-			if (totalEvents > startIndex)
+			int totalEvents = await _messagesAggregator.GetBotMessagesCountAsync(bot.Id);
+
+			if (startIndex == 0 && totalEvents == 0)
+				return Ok(new BotMessagesDto(bot, new TelegramMessageInfoDto[0], totalEvents));
+
+			if (startIndex >= totalEvents)
 				// TODO replace with json
 				return new ContentResult()
 				{
 					StatusCode = StatusCodes.Status400BadRequest,
-					Content = "Start index exceeds count of messages"
+					Content = "Start index must be between 0 and count of messages - 1"
 				};
 
 			IEnumerable<TelegramMessageInfoDto> messages =
-				await _messagesAggregator.GetMessagesAsync(bot.Id, startIndex, count);
+				await _messagesAggregator.GetBotMessagesAsync(bot.Id, startIndex, count);
 
 			return Ok(new BotMessagesDto(bot, messages, totalEvents));
 		}

@@ -1,11 +1,13 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
-using IntegorTelegramBotListeningShared.Dto;
+using IntegorTelegramBotListeningDto;
 
 namespace IntegorTelegramBotListeningService.Dto
 {
 	public class BotMessagesDto : BotStatisticsDto
 	{
+		[JsonPropertyOrder(int.MaxValue)]
 		public IEnumerable<TelegramMessageInfoDto> Messages { get; set; } = null!;
 
         public BotMessagesDto()

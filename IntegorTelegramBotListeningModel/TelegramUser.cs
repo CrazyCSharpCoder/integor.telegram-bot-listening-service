@@ -40,7 +40,5 @@ namespace IntegorTelegramBotListeningModel
 
 		// TODO по умолчанию присваивать дату создания
 		public DateTime AggregatedDate { get; set; }
-
-		public virtual ICollection<TelegramMessage> Messages { get; set; } = null!;
 	}
 }

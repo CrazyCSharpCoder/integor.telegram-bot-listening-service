@@ -17,11 +17,12 @@ using IntegorTelegramBotListeningServices;
 using IntegorTelegramBotListeningServices.ApiRetranslation;
 using IntegorTelegramBotListeningServices.ApiRetranslation.ApiContent;
 
-using IntegorTelegramBotListeningServices.DataContext;
+using IntegorTelegramBotListeningServices.EntityFramework;
 using IntegorTelegramBotListeningServices.EventsAggregation;
 
 namespace IntegorTelegramBotListeningService
 {
+	using Filters;
 	using Mapper.Profiles;
 
     public class Startup
@@ -53,7 +54,7 @@ namespace IntegorTelegramBotListeningService
 			services.AddSingleton<ITelegramBotApiGate, StandardTelegramBotApiGate>();
 			services.AddSingleton<IHttpResponseMessageToHttpResponseAssigner, StandardHttpResponseMessageToHttpResponseAssigner>();
 
-			services.AddSingleton<ITelegramBotEventsAggregator, TelegramBotUpdatesAggregator>();
+			services.AddScoped<ITelegramBotEventsAggregator, TelegramBotUpdatesAggregator>();
 
 			services.AddDbContext<IntegorTelegramBotListeningDataContext>(
 				options =>
@@ -63,13 +64,17 @@ namespace IntegorTelegramBotListeningService
 				});
 
 			services.AddScoped<IBotsManagementService, EntityFrameworkBotsManagementService>();
+			services.AddScoped<IChatsAggregationService, EntityFrameworkChatsAggregationService>();
 			services.AddScoped<IUsersAggregationService, EntityFrameworkUsersAggregationService>();
 			services.AddScoped<IMessagesAggregationService, EntityFrameworkMessagesAggregationService>();
 
 			services.AddAutoMapper(
 				typeof(TelegramBotMapperProfile),
 				typeof(TelegramUserMapperProfile),
+				typeof(TelegramChatMapperProfile),
 				typeof(TelegramMessageMapperProfile));
+
+			services.AddScoped<EntityFrameworkTransactionFilter>();
 		}
 
         public void Configure(IApplicationBuilder app)

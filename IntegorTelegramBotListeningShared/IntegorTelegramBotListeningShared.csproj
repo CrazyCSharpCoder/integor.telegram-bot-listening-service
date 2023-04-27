@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\IntegorTelegramBotListeningDto\IntegorTelegramBotListeningDto.csproj" />
     <ProjectReference Include="..\IntegorTelegramBotListeningModel\IntegorTelegramBotListeningModel.csproj" />
   </ItemGroup>
 

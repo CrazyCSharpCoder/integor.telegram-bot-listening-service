@@ -9,7 +9,7 @@ namespace IntegorTelegramBotListeningShared
 {
     public interface ITelegramBotEventsAggregator
     {
-		bool AllowAggregation(string botToken, string apiMethod, string? mediaType);
+		Task<bool> AllowAggregationAsync(string botToken, string apiMethod, string? mediaType);
         Task AggregateAsync(Stream body);
     }
 }

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IntegorTelegramBotListeningShared.Dto
+namespace IntegorTelegramBotListeningDto
 {
 	public class TelegramMessageInfoDto
 	{
@@ -12,6 +12,8 @@ namespace IntegorTelegramBotListeningShared.Dto
 
 		public string? Text { get; set; } = null!;
 		public DateTime Date { get; set; }
+
+		public TelegramChatInfoDto Chat { get; set; } = null!;
 
 		public TelegramUserInfoDto? From { get; set; }
 		public TelegramMessageInfoDto? ReplyToMessage { get; set; }

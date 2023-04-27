@@ -5,11 +5,11 @@ using IntegorTelegramBotListeningServices.EntityFramework.Model;
 
 namespace IntegorTelegramBotListeningService.Mapper.Profiles
 {
-	public class TelegramUserMapperProfile : Profile
+	public class TelegramChatMapperProfile : Profile
 	{
-        public TelegramUserMapperProfile()
+        public TelegramChatMapperProfile()
         {
-			CreateMap<TelegramUserInfoDto, EfTelegramUser>().ReverseMap();
+			CreateMap<TelegramChatInfoDto, EfTelegramChat>().ReverseMap();
         }
     }
 }

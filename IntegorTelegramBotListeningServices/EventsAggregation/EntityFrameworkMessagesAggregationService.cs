@@ -9,15 +9,15 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 
 using IntegorTelegramBotListeningModel;
+using IntegorTelegramBotListeningDto;
 
-using IntegorTelegramBotListeningShared.Dto;
-using IntegorTelegramBotListeningShared.Dto.Input;
 using IntegorTelegramBotListeningShared.EventsAggregation;
 
 namespace IntegorTelegramBotListeningServices.EventsAggregation
 {
-	using DataContext;
-	using DataContext.Internal;
+	using EntityFramework;
+	using EntityFramework.Model;
+	using EntityFramework.Internal;
 
 	public class EntityFrameworkMessagesAggregationService : IMessagesAggregationService
 	{
@@ -32,29 +32,44 @@ namespace IntegorTelegramBotListeningServices.EventsAggregation
 			_mapper = mapper;
         }
 
-        public async Task<TelegramMessageInfoDto> AddAsync(InputMessageDto message)
+		public async Task<TelegramMessageInfoDto?> GetAsync(long chatId, long messageId)
 		{
-			TelegramMessage messageModel = _mapper.Map<InputMessageDto, TelegramMessage>(message);
+			EfTelegramMessage? message = await _db.Messages
+				.Include(msg => msg.ReplyToMessage)
+				.FirstOrDefaultAsync(msg => msg.ChatId == chatId && msg.MessageId == messageId);
+
+			if (message == null)
+				return null;
+
+			return _mapper.Map<EfTelegramMessage, TelegramMessageInfoDto>(message);
+		}
+
+		public async Task<TelegramMessageInfoDto> AddAsync(TelegramMessage message)
+		{
+			EfTelegramMessage messageModel = _mapper.Map<TelegramMessage, EfTelegramMessage>(message);
 
 			await _db.Messages.AddAsync(messageModel);
-			await _db.SaveChangesAsync();
 
-			return _mapper.Map<TelegramMessage, TelegramMessageInfoDto>(messageModel);
+			return _mapper.Map<EfTelegramMessage, TelegramMessageInfoDto>(messageModel);
 		}
 
-		public async Task<IEnumerable<TelegramMessageInfoDto>> GetMessagesAsync(int botId, int startIndex, int count)
+		public async Task<IEnumerable<TelegramMessageInfoDto>> GetBotMessagesAsync(int botId, int startIndex, int count)
 		{
-			IEnumerable<TelegramMessage> messages = await _db.Messages
+			IEnumerable<EfTelegramMessage> messages = await _db.Messages
 				.GetMessagesOfBot(botId)
-				.Skip(startIndex)
-				.Take(count)
+				.Skip(startIndex).Take(count)
+
 				.Include(msg => msg.From)
+				.Include(msg => msg.Chat)
+				.Include(msg => msg.ReplyToMessage)
+
+				.OrderBy(msg => msg.Date)
 				.ToArrayAsync();
 
-			return messages.Select(msg => _mapper.Map<TelegramMessage, TelegramMessageInfoDto>(msg));
+			return messages.Select(msg => _mapper.Map<EfTelegramMessage, TelegramMessageInfoDto>(msg));
 		}
 
-		public async Task<int> GetMessagesCountAsync(int botId)
+		public async Task<int> GetBotMessagesCountAsync(int botId)
 		{
 			return await _db.Messages
 				.GetMessagesOfBot(botId)

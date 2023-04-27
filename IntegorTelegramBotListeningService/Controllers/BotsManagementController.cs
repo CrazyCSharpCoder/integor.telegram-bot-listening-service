@@ -3,8 +3,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
+using IntegorTelegramBotListeningDto;
+
 using IntegorTelegramBotListeningShared;
-using IntegorTelegramBotListeningShared.Dto;
 using IntegorTelegramBotListeningShared.EventsAggregation;
 
 using AutoMapper;
@@ -12,6 +13,7 @@ using AutoMapper;
 namespace IntegorTelegramBotListeningService.Controllers
 {
 	using Dto;
+	using Filters;
 
 	[ApiController]
 	[Route("bots")]
@@ -35,6 +37,7 @@ namespace IntegorTelegramBotListeningService.Controllers
         }
 
         [HttpPost]
+		[ServiceFilter(typeof(EntityFrameworkTransactionFilter))]
 		public async Task<IActionResult> RegisterBotAsync(
 			[FromBody] TelegramBotInputDto bot)
 		{
@@ -53,6 +56,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 		}
 
 		[HttpPut("{botId}")]
+		[ServiceFilter(typeof(EntityFrameworkTransactionFilter))]
 		public async Task<IActionResult> UpdateBotAsync(
 			int botId, [FromBody] TelegramBotInputDto bot)
 		{
@@ -93,7 +97,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 				// TODO replace with json
 				return NotFound();
 
-			int messagesCount = await _messagesAggregator.GetMessagesCountAsync(bot.Id);
+			int messagesCount = await _messagesAggregator.GetBotMessagesCountAsync(bot.Id);
 
 			return Ok(new BotStatisticsDto(bot, messagesCount));
 		}

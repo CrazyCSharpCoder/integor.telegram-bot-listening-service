@@ -8,14 +8,13 @@ using AutoMapper;
 
 using Microsoft.EntityFrameworkCore;
 
-using IntegorTelegramBotListeningModel;
-
+using IntegorTelegramBotListeningDto;
 using IntegorTelegramBotListeningShared;
-using IntegorTelegramBotListeningShared.Dto;
 
 namespace IntegorTelegramBotListeningServices
 {
-	using DataContext;
+	using EntityFramework;
+	using EntityFramework.Model;
 
 	public class EntityFrameworkBotsManagementService : IBotsManagementService
 	{
@@ -32,42 +31,40 @@ namespace IntegorTelegramBotListeningServices
 
         public async Task<TelegramBotInfoDto> AddAsync(TelegramBotInfoDto bot)
 		{
-			TelegramBot addedBotModel = _mapper.Map<TelegramBotInfoDto, TelegramBot>(bot);
+			EfTelegramBot addedBotModel = _mapper.Map<TelegramBotInfoDto, EfTelegramBot>(bot);
 
 			await _db.Bots.AddAsync(addedBotModel);
-			await _db.SaveChangesAsync();
 
-			return _mapper.Map<TelegramBot, TelegramBotInfoDto>(addedBotModel);
+			return _mapper.Map<EfTelegramBot, TelegramBotInfoDto>(addedBotModel);
 		}
 
 		public async Task<TelegramBotInfoDto?> GetByIdAsync(int id)
 		{
-			TelegramBot? bot = await _db.Bots.FirstOrDefaultAsync(bot => bot.Id == id);
+			EfTelegramBot? bot = await _db.Bots.FirstOrDefaultAsync(bot => bot.Id == id);
 
 			if (bot == null)
 				return null;
 
-			return _mapper.Map<TelegramBot, TelegramBotInfoDto>(bot);
+			return _mapper.Map<EfTelegramBot, TelegramBotInfoDto>(bot);
 		}
 
 		public async Task<TelegramBotInfoDto?> GetByTokenAsync(string botToken)
 		{
-			TelegramBot? bot = await _db.Bots.FirstOrDefaultAsync(bot => bot.Token == botToken);
+			EfTelegramBot? bot = await _db.Bots.FirstOrDefaultAsync(bot => bot.Token == botToken);
 
 			if (bot == null)
 				return null;
 
-			return _mapper.Map<TelegramBot, TelegramBotInfoDto>(bot);
+			return _mapper.Map<EfTelegramBot, TelegramBotInfoDto>(bot);
 		}
 
 		public async Task<TelegramBotInfoDto> UpdateAsync(TelegramBotInfoDto bot)
 		{
-			TelegramBot updatedBotModel = _mapper.Map<TelegramBotInfoDto, TelegramBot>(bot);
+			EfTelegramBot updatedBotModel = _mapper.Map<TelegramBotInfoDto, EfTelegramBot>(bot);
 
 			_db.Bots.Update(updatedBotModel);
-			await _db.SaveChangesAsync();
 
-			return _mapper.Map<TelegramBot, TelegramBotInfoDto>(updatedBotModel);
+			return _mapper.Map<EfTelegramBot, TelegramBotInfoDto>(updatedBotModel);
 		}
 	}
 }

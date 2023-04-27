@@ -8,14 +8,13 @@ using AutoMapper;
 
 using Microsoft.EntityFrameworkCore;
 
-using IntegorTelegramBotListeningModel;
-
-using IntegorTelegramBotListeningShared.Dto;
+using IntegorTelegramBotListeningDto;
 using IntegorTelegramBotListeningShared.EventsAggregation;
 
 namespace IntegorTelegramBotListeningServices.EventsAggregation
 {
-	using DataContext;
+	using EntityFramework;
+	using EntityFramework.Model;
 
 	public class EntityFrameworkUsersAggregationService : IUsersAggregationService
 	{
@@ -31,31 +30,29 @@ namespace IntegorTelegramBotListeningServices.EventsAggregation
 
 		public async Task<TelegramUserInfoDto?> GetAsync(long id)
 		{
-			TelegramUser? user = await _db.Users
+			EfTelegramUser? user = await _db.Users
 				.FirstOrDefaultAsync(user => user.Id == id);
 
 			if (user == null)
 				return null;
 
-			return _mapper.Map<TelegramUser, TelegramUserInfoDto>(user);
+			return _mapper.Map<EfTelegramUser, TelegramUserInfoDto>(user);
 		}
 		
 		public async Task<TelegramUserInfoDto> AddOrUpdateAsync(TelegramUserInfoDto user)
 		{
-			TelegramUser? aggregatedUser = await _db.Users
-				.FirstOrDefaultAsync(user => user.Id == user.Id);
+			EfTelegramUser? aggregatedUser = await _db.Users
+				.FirstOrDefaultAsync(dbUser => dbUser.Id == user.Id);
 
-			TelegramUser editedUser =
-				_mapper.Map<TelegramUserInfoDto, TelegramUser>(user);
+			EfTelegramUser editedUser =
+				_mapper.Map<TelegramUserInfoDto, EfTelegramUser>(user);
 
 			if (aggregatedUser == null)
 				await _db.Users.AddAsync(editedUser);
 			else
 				_db.Users.Update(editedUser);
 
-			await _db.SaveChangesAsync();
-
-			return _mapper.Map<TelegramUser, TelegramUserInfoDto>(editedUser);
+			return _mapper.Map<EfTelegramUser, TelegramUserInfoDto>(editedUser);
 		}
 	}
 }

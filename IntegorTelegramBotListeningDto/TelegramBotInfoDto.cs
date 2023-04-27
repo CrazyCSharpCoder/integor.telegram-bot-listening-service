@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IntegorTelegramBotListeningShared.Dto
+namespace IntegorTelegramBotListeningDto
 {
 	public class TelegramBotInfoDto
 	{

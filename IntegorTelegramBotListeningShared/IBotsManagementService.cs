@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using IntegorTelegramBotListeningDto;
+
 namespace IntegorTelegramBotListeningShared
 {
-	using Dto;
-
 	public interface IBotsManagementService
 	{
 		Task<TelegramBotInfoDto> AddAsync(TelegramBotInfoDto bot);

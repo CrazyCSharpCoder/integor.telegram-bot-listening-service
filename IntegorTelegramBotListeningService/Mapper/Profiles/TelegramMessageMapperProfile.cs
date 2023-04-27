@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
 
 using IntegorTelegramBotListeningModel;
+using IntegorTelegramBotListeningDto;
 
-using IntegorTelegramBotListeningShared.Dto;
-using IntegorTelegramBotListeningShared.Dto.Input;
+using IntegorTelegramBotListeningServices.EntityFramework.Model;
 
 namespace IntegorTelegramBotListeningService.Mapper.Profiles
 {
@@ -11,8 +11,16 @@ namespace IntegorTelegramBotListeningService.Mapper.Profiles
 	{
         public TelegramMessageMapperProfile()
         {
-			CreateMap<InputMessageDto, TelegramMessage>();
-			CreateMap<TelegramMessage, TelegramMessageInfoDto>();
+			CreateMap<TelegramMessage, EfTelegramMessage>();
+
+			CreateMap<EfTelegramMessage, TelegramMessageInfoDto>();
+			CreateMap<TelegramMessageInfoDto, TelegramMessage>()
+				.ForMember(
+					dest => dest.ReplyToMessageChatId,
+					options => options.MapFrom(source => source.ReplyToMessage!.Chat.Id))
+				.ForMember(
+					dest => dest.ReplyToMessageId,
+					options => options.MapFrom(source => source.ReplyToMessage!.MessageId));
 		}
 	}
 }
