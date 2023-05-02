@@ -48,9 +48,16 @@ namespace IntegorTelegramBotListeningServices.EventsAggregation
 				_mapper.Map<TelegramUserInfoDto, EfTelegramUser>(user);
 
 			if (aggregatedUser == null)
+			{
+				// TODO сделать в виде атрибутов
+				editedUser.AggregatedDate = DateTime.UtcNow;
 				await _db.Users.AddAsync(editedUser);
+			}
 			else
+			{
 				_db.Users.Update(editedUser);
+			}
+				
 
 			return _mapper.Map<EfTelegramUser, TelegramUserInfoDto>(editedUser);
 		}
