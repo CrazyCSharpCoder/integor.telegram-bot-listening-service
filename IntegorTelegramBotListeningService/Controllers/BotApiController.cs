@@ -11,28 +11,39 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 
 using IntegorTelegramBotListeningShared;
-using IntegorTelegramBotListeningShared.ApiContent;
+using IntegorTelegramBotListeningShared.ApiRetranslation;
+using IntegorTelegramBotListeningShared.ApiRetranslation.ApiContent;
 
 namespace IntegorTelegramBotListeningService.Controllers
 {
-	[ApiController]
+	using Filters;
+
+    [ApiController]
 	public class BotApiController : ControllerBase
 	{
 		private IBotApiHttpContentFactory _contentFactory;
 		private ITelegramBotApiGate _api;
 		private IHttpResponseMessageToHttpResponseAssigner _responseToAsp;
 
+		private ITelegramBotEventsAggregator _eventsAggregator;
+
 		public BotApiController(
 			IBotApiHttpContentFactory contentFactory,
 			ITelegramBotApiGate api,
-			IHttpResponseMessageToHttpResponseAssigner responseToActionResult)
+			IHttpResponseMessageToHttpResponseAssigner responseToActionResult,
+
+			ITelegramBotEventsAggregator eventsAggregator)
         {
 			_contentFactory = contentFactory;
 			_api = api;
 			_responseToAsp = responseToActionResult;
+
+			_eventsAggregator = eventsAggregator;
         }
 
 		[Route("bot{botToken}/{apiMethod}")]
+		[IgnoreExceptionFilter]
+		[ServiceFilter(typeof(EntityFrameworkTransactionFilter))]
 		public async Task ListenToBotAsync(string botToken, string apiMethod)
 		{
 			string? mediaType = Request.ContentType == null ? null : GetMediaType(Request.ContentType);
@@ -59,6 +70,18 @@ namespace IntegorTelegramBotListeningService.Controllers
 			using HttpResponseMessage response = await _api.SendAsync(
 				content, new HttpMethod(Request.Method), botToken, apiMethod, query);
 
+			string? responseMediaType = response.Content.Headers.ContentType?.MediaType;
+
+			if (response.IsSuccessStatusCode && await _eventsAggregator.AllowAggregationAsync(botToken, apiMethod, responseMediaType))
+			{
+				Stream responseBody = await response.Content.ReadAsStreamAsync();
+
+				try { await _eventsAggregator.AggregateAsync(responseBody); }
+				catch { }
+
+				responseBody.Position = 0;
+			}
+
 			await _responseToAsp.AssignAsync(Response, response);
 
 			content.Dispose();
@@ -75,7 +98,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 		private async Task<IEnumerable<MultipartFormContentDescriptor>> ExtractFormValuesAsync(IFormCollection form)
 		{
-			List<MultipartFormContentDescriptor> content = new List<MultipartFormContentDescriptor>();
+			List<MultipartFormContentDescriptor> content =
+				new List<MultipartFormContentDescriptor>();
 
 			foreach (var formValue in form)
 			{
@@ -99,14 +123,17 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 		private IEnumerable<MultipartFormContentDescriptor> ExtractFormFiles(IFormFileCollection files)
 		{
-			List<MultipartFormContentDescriptor> content = new List<MultipartFormContentDescriptor>();
+			List<MultipartFormContentDescriptor> content =
+				new List<MultipartFormContentDescriptor>();
 
 			foreach (var file in files)
 			{
 				Stream body = file.OpenReadStream();
 
 				MultipartFormContentDescriptor multipartContent =
-					new MultipartFormContentDescriptor("application/octet-stream", file.Name, body, file.FileName);
+					new MultipartFormContentDescriptor(
+						"application/octet-stream",
+						file.Name, body, file.FileName);
 
 				content.Add(multipartContent);
 			}
