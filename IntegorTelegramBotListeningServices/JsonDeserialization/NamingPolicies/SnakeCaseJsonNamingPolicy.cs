@@ -28,7 +28,7 @@ namespace IntegorTelegramBotListeningServices.JsonDeserialization.NamingPolicies
 		public override string ConvertName(string name)
 		{
 			if (name.Length == 1)
-				return name;
+				return name.ToLower();
 
 			char lastChar = name.Last();
 
