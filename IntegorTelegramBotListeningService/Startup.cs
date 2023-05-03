@@ -12,6 +12,9 @@ using IntegorTelegramBotListeningShared.Configuration;
 using IntegorTelegramBotListeningShared.ApiRetranslation;
 using IntegorTelegramBotListeningShared.ApiRetranslation.ApiContent;
 
+using IntegorTelegramBotListeningShared.ApiAggregation.Aggregators;
+using IntegorTelegramBotListeningShared.ApiAggregation.DataDeserialization;
+
 using IntegorTelegramBotListeningShared.EventsAggregation;
 
 using IntegorTelegramBotListeningServices;
@@ -20,6 +23,10 @@ using IntegorTelegramBotListeningServices.ApiRetranslation.ApiContent;
 
 using IntegorTelegramBotListeningServices.EntityFramework;
 using IntegorTelegramBotListeningServices.Bots;
+
+using IntegorTelegramBotListeningServices.ApiAggregation.Aggregators;
+using IntegorTelegramBotListeningServices.ApiAggregation.DataDeserialization;
+
 using IntegorTelegramBotListeningServices.EventsAggregation;
 
 namespace IntegorTelegramBotListeningService
@@ -71,7 +78,7 @@ namespace IntegorTelegramBotListeningService
 			services.AddSingleton<ITelegramBotApiGate, StandardTelegramBotApiGate>();
 			services.AddSingleton<IHttpResponseMessageToHttpResponseAssigner, StandardHttpResponseMessageToHttpResponseAssigner>();
 
-			services.AddScoped<ITelegramBotEventsAggregator, TelegramBotUpdatesAggregator>();
+			services.AddScoped<ITelegramBotLongPollingAggregator, StandardTelegramBotLongPollingAggregator>();
 
 			services.AddDbContext<IntegorTelegramBotListeningDataContext>(
 				options =>
@@ -82,6 +89,12 @@ namespace IntegorTelegramBotListeningService
 
 			services.AddScoped<IBotsManagementService, EntityFrameworkBotsManagementService>();
 			services.AddScoped<IBotWebhookManagementService, EntityFrameworkBotWebhookManagementService>();
+
+			services.AddScoped<IWebhookUpdateDeserializer, StandardWebhookUpdateDeserializer>();
+			services.AddScoped<ILongPollingUpdatesDeserializer, StandardLongPollingUpdatesDeserializer>();
+
+			services.AddScoped<ITelegramBotLongPollingAggregator, StandardTelegramBotLongPollingAggregator>();
+			services.AddScoped<ITelegramBotWebhookAggregator, StandardTelegramBotWebhookAggregator>();
 
 			services.AddScoped<IChatsAggregationService, EntityFrameworkChatsAggregationService>();
 			services.AddScoped<IUsersAggregationService, EntityFrameworkUsersAggregationService>();

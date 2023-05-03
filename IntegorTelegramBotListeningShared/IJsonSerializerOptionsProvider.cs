@@ -9,7 +9,7 @@ namespace IntegorTelegramBotListeningShared
 {
 	public interface IJsonSerializerOptionsProvider
 	{
-		JsonSerializerOptions CreateJsonSerializerOptions();
+		JsonSerializerOptions GetJsonSerializerOptions();
 		void AssignJsonSerizalizerOptions(JsonSerializerOptions target);
 	}
 }

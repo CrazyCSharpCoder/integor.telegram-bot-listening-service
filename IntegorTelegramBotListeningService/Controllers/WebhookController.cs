@@ -1,18 +1,26 @@
-﻿using System.Net.Http;
+﻿using System.Text.Json;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Options;
+
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+
+using IntegorTelegramBotListeningModel;
 
 using IntegorTelegramBotListeningDto;
 using IntegorTelegramBotListeningDto.Webhook;
 
+using IntegorTelegramBotListeningShared;
 using IntegorTelegramBotListeningShared.Configuration;
 using IntegorTelegramBotListeningShared.Bots;
+
 using IntegorTelegramBotListeningShared.ApiRetranslation;
 using IntegorTelegramBotListeningShared.ApiRetranslation.ApiContent;
 
-using IntegorTelegramBotListeningModel;
+using IntegorTelegramBotListeningShared.ApiAggregation.Aggregators;
+using IntegorTelegramBotListeningShared.ApiAggregation.DataDeserialization;
 
 namespace IntegorTelegramBotListeningService.Controllers
 {
@@ -32,6 +40,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 		private HttpRequestHelper _requestHelper;
 
+		private IJsonSerializerOptionsProvider _jsonOptionsProvider;
+
 		private ITelegramBotApiGate _api;
 		private IBotApiHttpContentFactory _contentFactory;
 		private IHttpResponseMessageToHttpResponseAssigner _responseToAsp;
@@ -39,21 +49,31 @@ namespace IntegorTelegramBotListeningService.Controllers
 		private IBotsManagementService _botsManagement;
 		private IBotWebhookManagementService _botWebhooksManagement;
 
+		private IWebhookUpdateDeserializer _updatesDeserializer;
+		private ITelegramBotWebhookAggregator _updatesAggregator;
+
 		public WebhookController(
 			IOptions<TelegramBotListeningServiceConfiguration> serviceOptions,
 
 			HttpRequestHelper requestHelper,
+
+			IJsonSerializerOptionsProvider jsonOptionsProvider,
 
 			ITelegramBotApiGate api,
 			IBotApiHttpContentFactory contentFactory,
 			IHttpResponseMessageToHttpResponseAssigner responseToAsp,
 
 			IBotsManagementService botsManagement,
-			IBotWebhookManagementService botWebhooksManagement)
+			IBotWebhookManagementService botWebhooksManagement,
+
+			IWebhookUpdateDeserializer updatesDeserializer,
+			ITelegramBotWebhookAggregator updatesAggregator)
 		{
 			_serviceConfiguration = serviceOptions.Value;
 
 			_requestHelper = requestHelper;
+
+			_jsonOptionsProvider = jsonOptionsProvider;
 
 			_api = api;
 			_contentFactory = contentFactory;
@@ -61,6 +81,9 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 			_botsManagement = botsManagement;
 			_botWebhooksManagement = botWebhooksManagement;
+
+			_updatesDeserializer = updatesDeserializer;
+			_updatesAggregator = updatesAggregator;
 		}
 
 		[Route("setWebhook")]
@@ -141,6 +164,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 		//}
 
 		[HttpPost(_translateWebhookControllerPath)]
+		[ServiceFilter(typeof(EntityFrameworkTransactionFilter))]
 		public async Task TranslateWebhookAsync(string botToken)
 		{
 			TelegramBotInfoDto? bot = await _botsManagement.GetByTokenAsync(botToken);
@@ -155,7 +179,22 @@ namespace IntegorTelegramBotListeningService.Controllers
 				// TODO consider in what situations it can happen and handle errors
 				throw new System.Exception();
 
-			using HttpContent content = await _requestHelper.HttpRequestToHttpContentAsync(Request);
+			HttpContent content;
+
+			if (IsApplicationJson(Request))
+			{
+				JsonSerializerOptions jsonOptions = _jsonOptionsProvider.GetJsonSerializerOptions();
+				JsonElement jsonBody = await JsonSerializer.DeserializeAsync<JsonElement>(Request.Body, options: jsonOptions);
+
+				await AggregateWebhookAsync(jsonBody, bot.Id);
+
+				content = _contentFactory.CreateJsonContent(jsonBody);
+			}
+			else
+			{
+				content = await _requestHelper.HttpRequestToHttpContentAsync(Request);
+			}
+
 			using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, webhook.Url)
 			{
 				Content = content
@@ -168,6 +207,32 @@ namespace IntegorTelegramBotListeningService.Controllers
 		}
 
 		private string ComposeUrlOfWebhook(string botToken)
-			=> string.Join('/', _serviceConfiguration.HostedUrl, $"bot{botToken}", _translateWebhookControllerPath);
+			=> string.Join('/',
+				_serviceConfiguration.HostedUrl,
+				$"bot{botToken}", _translateWebhookControllerPath);
+
+		private async Task AggregateWebhookAsync(JsonElement jsonBody, int botId)
+		{
+			TelegramUpdateDto? update;
+
+			try { update = _updatesDeserializer.Deserialize(jsonBody); }
+			catch { return; } // Impossible to aggregate
+
+			if (update == null)
+				return;
+
+			try { await _updatesAggregator.AggregateAsync(update, botId); }
+			catch { /*Ignore*/ }
+		}
+
+		private bool IsApplicationJson(HttpRequest request)
+		{
+			if (request.ContentType == null)
+				return false;
+
+			string mediaType = HttpRequestStaticHelpers.GetMediaType(request.ContentType);
+
+			return mediaType == "application/json";
+		}
 	}
 }

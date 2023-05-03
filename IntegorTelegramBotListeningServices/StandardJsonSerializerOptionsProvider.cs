@@ -13,7 +13,7 @@ namespace IntegorTelegramBotListeningServices
 {
 	public class StandardJsonSerializerOptionsProvider : IJsonSerializerOptionsProvider
 	{
-		public JsonSerializerOptions CreateJsonSerializerOptions()
+		public JsonSerializerOptions GetJsonSerializerOptions()
 		{
 			JsonSerializerOptions options = new JsonSerializerOptions();
 			AddTelegramJsonOptions(options);

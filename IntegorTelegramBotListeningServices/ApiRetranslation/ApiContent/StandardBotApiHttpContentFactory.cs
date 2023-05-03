@@ -63,7 +63,7 @@ namespace IntegorTelegramBotListeningServices.ApiRetranslation.ApiContent
 		public HttpContent CreateJsonContent<TBody>(TBody body)
 		{
 			JsonSerializerOptions options =
-				_jsonOptionsProvider.CreateJsonSerializerOptions();
+				_jsonOptionsProvider.GetJsonSerializerOptions();
 
 			return JsonContent.Create(body, options: options);
 		}

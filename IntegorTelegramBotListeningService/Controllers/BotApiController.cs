@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -7,38 +8,66 @@ using System.Net.Http;
 
 using Microsoft.AspNetCore.Mvc;
 
+using IntegorTelegramBotListeningDto;
+
 using IntegorTelegramBotListeningShared;
+using IntegorTelegramBotListeningShared.Bots;
+
 using IntegorTelegramBotListeningShared.ApiRetranslation;
+using IntegorTelegramBotListeningShared.ApiRetranslation.ApiContent;
+
+using IntegorTelegramBotListeningShared.ApiAggregation.DataDeserialization;
+using IntegorTelegramBotListeningShared.ApiAggregation.Aggregators;
 
 namespace IntegorTelegramBotListeningService.Controllers
 {
-	using Filters;
-	using Helpers;
+    using Filters;
+    using Helpers;
 
-    [ApiController]
+	[ApiController]
 	public class BotApiController : ControllerBase
 	{
+		private const string _getUpdatesApiMethodName = "getUpdates";
+
 		private HttpRequestHelper _requestHelper;
 
+		private IJsonSerializerOptionsProvider _jsonOptionsProvider;
+
 		private ITelegramBotApiGate _api;
+		private IBotApiHttpContentFactory _contentFactory;
 		private IHttpResponseMessageToHttpResponseAssigner _responseToAsp;
 
-		private ITelegramBotEventsAggregator _eventsAggregator;
+		private IBotsManagementService _botsManagement;
+
+		private ILongPollingUpdatesDeserializer _updatesDeserializer;
+		private ITelegramBotLongPollingAggregator _updatesAggregator;
 
 		public BotApiController(
 			HttpRequestHelper requestHelper,
 
-			ITelegramBotApiGate api,
-			IHttpResponseMessageToHttpResponseAssigner responseToActionResult,
+			IJsonSerializerOptionsProvider jsonOptionsProvider,
 
-			ITelegramBotEventsAggregator eventsAggregator)
+			ITelegramBotApiGate api,
+			IBotApiHttpContentFactory contentFactory,
+			IHttpResponseMessageToHttpResponseAssigner responseToAsp,
+
+			IBotsManagementService botsManagement,
+
+			ILongPollingUpdatesDeserializer updatesDeserializer,
+			ITelegramBotLongPollingAggregator updatesAggregator)
         {
 			_requestHelper = requestHelper;
+			_contentFactory = contentFactory;
+
+			_jsonOptionsProvider = jsonOptionsProvider;
 
 			_api = api;
-			_responseToAsp = responseToActionResult;
+			_responseToAsp = responseToAsp;
 
-			_eventsAggregator = eventsAggregator;
+			_botsManagement = botsManagement;
+
+			_updatesDeserializer = updatesDeserializer;
+			_updatesAggregator = updatesAggregator;
         }
 
 		[Route("bot{botToken}/{apiMethod}")]
@@ -55,19 +84,68 @@ namespace IntegorTelegramBotListeningService.Controllers
 			using HttpResponseMessage response = await _api.SendAsync(
 				content, new HttpMethod(Request.Method), botToken, apiMethod, query);
 
-			string? responseMediaType = response.Content.Headers.ContentType?.MediaType;
-
-			if (response.IsSuccessStatusCode && await _eventsAggregator.AllowAggregationAsync(botToken, apiMethod, responseMediaType))
+			if (!response.IsSuccessStatusCode)
 			{
-				Stream responseBody = await response.Content.ReadAsStreamAsync();
-
-				try { await _eventsAggregator.AggregateAsync(responseBody); }
-				catch { }
-
-				responseBody.Position = 0;
+				await _responseToAsp.AssignAsync(Response, response);
+				return;
 			}
 
-			await _responseToAsp.AssignAsync(Response, response);
+			int? botId = await GetBotIdSafeAsync(botToken);
+
+			if (botId == null)
+			{
+				await _responseToAsp.AssignAsync(Response, response);
+				return;
+			}
+
+			if (response.Content.Headers.ContentType?.MediaType != "application/json")
+			{
+				await _responseToAsp.AssignAsync(Response, response);
+				return;
+			}
+
+			Stream streamResponseBody = await response.Content.ReadAsStreamAsync();
+			JsonSerializerOptions jsonOptions = _jsonOptionsProvider.GetJsonSerializerOptions();
+
+			JsonElement jsonBody = await JsonSerializer.DeserializeAsync<JsonElement>(
+				streamResponseBody, options: jsonOptions);
+
+			if (apiMethod.ToLower() == _getUpdatesApiMethodName.ToLower())
+			{
+				try { await AggregateUpdatesAsync(jsonBody, botId.Value); }
+				catch { /*Ignore*/ }
+			}
+
+			using HttpContent responseContent = _contentFactory.CreateJsonContent(jsonBody);
+
+			await _responseToAsp.AssignAsync(Response,
+				response.StatusCode, responseContent, response.Headers);
+		}
+
+		private async Task<int?> GetBotIdSafeAsync(string botToken)
+		{
+			try
+			{
+				return (await _botsManagement.GetByTokenAsync(botToken))?.Id;
+			}
+			catch
+			{
+				return null;
+			}
+		}
+
+		private async Task AggregateUpdatesAsync(JsonElement updatesJson, int botId)
+		{
+			IEnumerable<TelegramUpdateDto>? updates;
+
+			try { updates = _updatesDeserializer.Deserialize(updatesJson); }
+			catch { return; } // Impossible to aggregate
+
+			if (updates == null)
+				return;
+
+			try { await _updatesAggregator.AggregateAsync(updates, botId); }
+			catch { /*Ignore*/ }
 		}
 	}
 }

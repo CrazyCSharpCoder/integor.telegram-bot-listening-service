@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 
@@ -16,16 +17,29 @@ namespace IntegorTelegramBotListeningServices.ApiRetranslation
 {
     public class StandardHttpResponseMessageToHttpResponseAssigner : IHttpResponseMessageToHttpResponseAssigner
     {
-        public async Task AssignAsync(HttpResponse target, HttpResponseMessage source)
+		public async Task AssignAsync(HttpResponse target, HttpStatusCode statusCode,
+			HttpContent contentSource, HttpResponseHeaders headers)
+		{
+			target.StatusCode = HttpStatusCodeToInt(statusCode);
+
+			AssignHeaders(target.Headers, headers);
+			await AssignContentAsync(target, contentSource);
+		}
+
+		public async Task AssignAsync(HttpResponse target, HttpResponseMessage source)
         {
-            target.StatusCode = (int)source.StatusCode;
+            target.StatusCode = HttpStatusCodeToInt(source.StatusCode);
 
             AssignHeaders(target.Headers, source.Headers);
             await AssignContentAsync(target, source.Content);
         }
 
+		private int HttpStatusCodeToInt(HttpStatusCode statusCode) => (int)statusCode;
+
         private void AssignHeaders(IHeaderDictionary target, HttpResponseHeaders source)
         {
+			target.Clear();
+
             foreach (KeyValuePair<string, IEnumerable<string>> headerToValues in source)
                 target[headerToValues.Key] = new StringValues(headerToValues.Value.ToArray());
         }
@@ -35,13 +49,7 @@ namespace IntegorTelegramBotListeningServices.ApiRetranslation
             if (contentSource.Headers.ContentType != null)
                 targetResponse.ContentType = contentSource.Headers.ContentType.MediaType;
 
-            if (contentSource.Headers.ContentLength != null)
-                targetResponse.ContentLength = contentSource.Headers.ContentLength;
-
-            //await contentSource.CopyToAsync(targetResponse.Body);
-
-            string content = await contentSource.ReadAsStringAsync();
-            await targetResponse.WriteAsync(content);
+            await contentSource.CopyToAsync(targetResponse.Body);
         }
     }
 }
