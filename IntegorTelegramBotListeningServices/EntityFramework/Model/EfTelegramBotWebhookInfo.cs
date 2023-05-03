@@ -8,9 +8,8 @@ using IntegorTelegramBotListeningModel;
 
 namespace IntegorTelegramBotListeningServices.EntityFramework.Model
 {
-	public class EfTelegramBot : TelegramBot
+	public class EfTelegramBotWebhookInfo : TelegramBotWebhookInfo
 	{
-		public virtual ICollection<EfTelegramMessage> RelatedMessages { get; set; } = null!;
-		public virtual EfTelegramBotWebhookInfo? WebhookInfo { get; set; }
+		public virtual EfTelegramBot Bot { get; set; } = null!;
 	}
 }

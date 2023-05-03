@@ -14,5 +14,6 @@ namespace IntegorTelegramBotListeningShared.ApiRetranslation.ApiContent
     {
         HttpContent CreateDefaultContent(Stream body, string? mediaType);
         HttpContent CreateMultipartFormContent(IEnumerable<MultipartFormContentDescriptor> contentParts, string boundary);
-    }
+		HttpContent CreateJsonContent<TBody>(TBody body);
+	}
 }

@@ -12,20 +12,24 @@ using IntegorTelegramBotListeningModel;
 using IntegorTelegramBotListeningDto;
 
 using IntegorTelegramBotListeningShared;
+
+using IntegorTelegramBotListeningShared.Json.Converters;
+using IntegorTelegramBotListeningShared.Json.NamingPolicies;
+
+using IntegorTelegramBotListeningShared.Bots;
 using IntegorTelegramBotListeningShared.EventsAggregation;
 
 namespace IntegorTelegramBotListeningServices
 {
-	using JsonDeserialization.Converters;
-	using JsonDeserialization.NamingPolicies;
+    using JsonDeserialization.Internal;
 
-	using JsonDeserialization.Internal;
-
-	public class TelegramBotUpdatesAggregator : ITelegramBotEventsAggregator
+    public class TelegramBotUpdatesAggregator : ITelegramBotEventsAggregator
 	{
 		private const string _getUpdatesMethod = "getUpdates";
 
 		private string _botToken = null!;
+
+		private IJsonSerializerOptionsProvider _jsonOptionsProvider;
 
 		private IBotsManagementService _botsManagement;
 
@@ -36,6 +40,8 @@ namespace IntegorTelegramBotListeningServices
 		private IMapper _mapper;
 
 		public TelegramBotUpdatesAggregator(
+			IJsonSerializerOptionsProvider jsonOptionsProvider,
+
 			IBotsManagementService botsManagement,
 
 			IChatsAggregationService chatsAggregator,
@@ -44,6 +50,8 @@ namespace IntegorTelegramBotListeningServices
 			
 			IMapper mapper)
         {
+			_jsonOptionsProvider = jsonOptionsProvider;
+
 			_botsManagement = botsManagement;
 
 			_chatsAggregator = chatsAggregator;
@@ -78,7 +86,7 @@ namespace IntegorTelegramBotListeningServices
 				return;
 
 			// Десериализация json'а с обновлениями
-			JsonSerializerOptions serializerOptions = GetSerializerOptions();
+			JsonSerializerOptions serializerOptions = _jsonOptionsProvider.CreateJsonSerializerOptions();
 			JsonElement jsonBody = await JsonSerializer.DeserializeAsync<JsonElement>(body, serializerOptions);
 
 			if (!jsonBody.GetProperty("ok").GetBoolean())
@@ -101,19 +109,6 @@ namespace IntegorTelegramBotListeningServices
 			// Агрегирование сообщений
 			foreach (TelegramMessageInfoDto message in messages)
 				await AggregateMessageAsync(bot.Id, message);
-		}
-
-		private JsonSerializerOptions GetSerializerOptions()
-		{
-			JsonSerializerOptions options = new JsonSerializerOptions()
-			{
-				PropertyNameCaseInsensitive = true,
-				PropertyNamingPolicy = new SnakeCaseJsonNamingPolicy()
-			};
-
-			options.Converters.Add(new UnixDateTimeJsonConverter());
-
-			return options;
 		}
 
 		private async Task AggregateMessageAsync(int botId, TelegramMessageInfoDto message)
