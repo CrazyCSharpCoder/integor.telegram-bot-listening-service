@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Net.Http;
+using System.Net.Mime;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Options;
@@ -43,6 +44,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 		private IJsonSerializerOptionsProvider _jsonOptionsProvider;
 
 		private ITelegramBotApiGate _api;
+		private IWebhookInvoker _webhookInvoker;
 		private IBotApiHttpContentFactory _contentFactory;
 		private IHttpResponseMessageToHttpResponseAssigner _responseToAsp;
 
@@ -60,6 +62,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 			IJsonSerializerOptionsProvider jsonOptionsProvider,
 
 			ITelegramBotApiGate api,
+			IWebhookInvoker webhookInvoker,
 			IBotApiHttpContentFactory contentFactory,
 			IHttpResponseMessageToHttpResponseAssigner responseToAsp,
 
@@ -76,6 +79,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 			_jsonOptionsProvider = jsonOptionsProvider;
 
 			_api = api;
+			_webhookInvoker = webhookInvoker;
 			_contentFactory = contentFactory;
 			_responseToAsp = responseToAsp;
 
@@ -195,13 +199,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 				content = await _requestHelper.HttpRequestToHttpContentAsync(Request);
 			}
 
-			using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, webhook.Url)
-			{
-				Content = content
-			};
-
-			using HttpClient client = new HttpClient();
-			using HttpResponseMessage response = await client.SendAsync(request);
+			using HttpResponseMessage response =
+				await _webhookInvoker.InvokeWebhookAsync(webhook.Url, content);
 
 			await _responseToAsp.AssignAsync(Response, response);
 		}
@@ -231,8 +230,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 				return false;
 
 			string mediaType = HttpRequestStaticHelpers.GetMediaType(request.ContentType);
-
-			return mediaType == "application/json";
+			
+			return mediaType == MediaTypeNames.Application.Json;
 		}
 	}
 }

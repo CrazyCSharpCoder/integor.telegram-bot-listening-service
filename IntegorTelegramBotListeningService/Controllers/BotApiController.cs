@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 using System.IO;
 using System.Net.Http;
+using System.Net.Mime;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -92,13 +93,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 			int? botId = await GetBotIdSafeAsync(botToken);
 
-			if (botId == null)
-			{
-				await _responseToAsp.AssignAsync(Response, response);
-				return;
-			}
-
-			if (response.Content.Headers.ContentType?.MediaType != "application/json")
+			if (botId == null || !IsApplicationJson(response.Content))
 			{
 				await _responseToAsp.AssignAsync(Response, response);
 				return;
@@ -147,5 +142,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 			try { await _updatesAggregator.AggregateAsync(updates, botId); }
 			catch { /*Ignore*/ }
 		}
+
+		private bool IsApplicationJson(HttpContent content)
+			=> content.Headers.ContentType?.MediaType == MediaTypeNames.Application.Json;
 	}
 }

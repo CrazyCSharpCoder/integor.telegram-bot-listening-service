@@ -76,6 +76,7 @@ namespace IntegorTelegramBotListeningService
 			services.AddSingleton<IMultipartContentTypesTransformer, StandardMultipartContentTypesTransformer>();
 			services.AddSingleton<IBotApiHttpContentFactory, StandardBotApiHttpContentFactory>();
 			services.AddSingleton<ITelegramBotApiGate, StandardTelegramBotApiGate>();
+			services.AddSingleton<IWebhookInvoker, StandardWebhookInvoker>();
 			services.AddSingleton<IHttpResponseMessageToHttpResponseAssigner, StandardHttpResponseMessageToHttpResponseAssigner>();
 
 			services.AddScoped<ITelegramBotLongPollingAggregator, StandardTelegramBotLongPollingAggregator>();
