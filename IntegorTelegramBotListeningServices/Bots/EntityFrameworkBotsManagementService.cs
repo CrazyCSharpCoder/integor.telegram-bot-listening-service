@@ -36,6 +36,7 @@ namespace IntegorTelegramBotListeningServices.Bots
             addedBotModel.CreatedDate = addedBotModel.UpdatedDate = DateTime.UtcNow;
 
             await _db.Bots.AddAsync(addedBotModel);
+			await _db.SaveChangesAsync();
 
             return _mapper.Map<EfTelegramBot, TelegramBotInfoDto>(addedBotModel);
         }
@@ -67,8 +68,15 @@ namespace IntegorTelegramBotListeningServices.Bots
             updatedBotModel.UpdatedDate = DateTime.UtcNow;
 
             _db.Bots.Update(updatedBotModel);
+			await _db.SaveChangesAsync();
 
-            return _mapper.Map<EfTelegramBot, TelegramBotInfoDto>(updatedBotModel);
+			return _mapper.Map<EfTelegramBot, TelegramBotInfoDto>(updatedBotModel);
         }
-    }
+
+		public async Task<IEnumerable<TelegramBotInfoDto>> GetAllAsync()
+		{
+			IEnumerable<EfTelegramBot> bots = await _db.Bots.ToArrayAsync();
+			return bots.Select(bot => _mapper.Map<EfTelegramBot, TelegramBotInfoDto>(bot));
+		}
+	}
 }

@@ -15,5 +15,7 @@ namespace IntegorTelegramBotListeningShared.Bots
 
         Task<TelegramBotInfoDto?> GetByIdAsync(int id);
         Task<TelegramBotInfoDto?> GetByTokenAsync(string botToken);
+
+		Task<IEnumerable<TelegramBotInfoDto>> GetAllAsync();
     }
 }

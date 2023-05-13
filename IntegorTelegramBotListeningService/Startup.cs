@@ -59,6 +59,14 @@ namespace IntegorTelegramBotListeningService
 		{
 			services.AddSingleton<IJsonSerializerOptionsProvider, StandardJsonSerializerOptionsProvider>();
 
+			services.AddCors(options =>
+			{
+				options.AddDefaultPolicy(builder => builder
+					.AllowAnyOrigin()
+					.AllowAnyHeader()
+					.AllowAnyMethod());
+			});
+
 			services.AddControllers().AddJsonOptions(options =>
 			{
 				IJsonSerializerOptionsProvider optionsProvider = services
@@ -114,6 +122,7 @@ namespace IntegorTelegramBotListeningService
         public void Configure(IApplicationBuilder app)
 		{
 			app.UseRouting();
+			app.UseCors();
 			app.UseEndpoints(endpoints =>
 			{
 				endpoints.MapControllers();

@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +17,7 @@ namespace IntegorTelegramBotListeningService.Controllers
     using Dto;
     using Filters;
 
-    [ApiController]
+	[ApiController]
 	[Route("bots")]
 	public class BotsManagementController : ControllerBase
 	{
@@ -52,7 +54,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 			TelegramBotInfoDto addedBot = _mapper.Map<TelegramBotInputDto, TelegramBotInfoDto>(bot);
 			addedBot = await _botsManagement.AddAsync(addedBot);
 
-			return Ok(addedBot);
+			return Ok(new BotStatisticsDto(addedBot));
 		}
 
 		[HttpPut("{botId}")]
@@ -84,12 +86,13 @@ namespace IntegorTelegramBotListeningService.Controllers
 			_mapper.Map(bot, oldBot);
 
 			TelegramBotInfoDto updateResult = await _botsManagement.UpdateAsync(oldBot);
+			int messagesCount = await _messagesAggregator.GetBotMessagesCountAsync(botId);
 
-			return Ok(updateResult);
+			return Ok(new BotStatisticsDto(updateResult, messagesCount));
 		}
 
 		[HttpGet("{botToken}")]
-		public async Task<IActionResult> GetBotAsync(string botToken)
+		public async Task<IActionResult> GetBotByTokenAsync(string botToken)
 		{
 			TelegramBotInfoDto? bot = await _botsManagement.GetByTokenAsync(botToken);
 
@@ -100,6 +103,35 @@ namespace IntegorTelegramBotListeningService.Controllers
 			int messagesCount = await _messagesAggregator.GetBotMessagesCountAsync(bot.Id);
 
 			return Ok(new BotStatisticsDto(bot, messagesCount));
+		}
+
+		[HttpGet("{botId:int}")]
+		public async Task<IActionResult> GetBotByIdAsync(int botId)
+		{
+			TelegramBotInfoDto? bot = await _botsManagement.GetByIdAsync(botId);
+
+			if (bot == null)
+				// TODO replace with json
+				return NotFound();
+
+			int messagesCount = await _messagesAggregator.GetBotMessagesCountAsync(bot.Id);
+
+			return Ok(new BotStatisticsDto(bot, messagesCount));
+		}
+
+		[HttpGet("all")]
+		public async Task<IActionResult> GetAllBotsAsync()
+		{
+			IEnumerable<TelegramBotInfoDto> bots = await _botsManagement.GetAllAsync();
+			List<BotStatisticsDto> resultDtos = new List<BotStatisticsDto>();
+
+			foreach (TelegramBotInfoDto bot in bots)
+			{
+				int messagesCount = await _messagesAggregator.GetBotMessagesCountAsync(bot.Id);
+				resultDtos.Add(new BotStatisticsDto(bot, messagesCount));
+			}
+
+			return Ok(resultDtos);
 		}
 	}
 }
