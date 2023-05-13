@@ -6,14 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 
 using IntegorTelegramBotListeningDto;
 
-using IntegorTelegramBotListeningShared;
+using IntegorTelegramBotListeningShared.Bots;
 using IntegorTelegramBotListeningShared.EventsAggregation;
 
 namespace IntegorTelegramBotListeningService.Controllers
 {
-	using Dto;
+    using Dto;
 
-	[ApiController]
+    [ApiController]
 	[Route("events")]
 	public class AggregatedEventsController : ControllerBase
 	{

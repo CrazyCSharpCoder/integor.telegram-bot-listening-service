@@ -13,6 +13,8 @@ namespace IntegorTelegramBotListeningServices.EntityFramework
 	public class IntegorTelegramBotListeningDataContext : DbContext
 	{
 		public DbSet<EfTelegramBot> Bots { get; set; } = null!;
+		public DbSet<EfTelegramBotWebhookInfo> Webhooks { get; set; } = null!;
+
 		public DbSet<EfTelegramUser> Users { get; set; } = null!;
 		public DbSet<EfTelegramChat> Chats { get; set; } = null!;
 		public DbSet<EfTelegramMessage> Messages { get; set; } = null!;
@@ -24,6 +26,13 @@ namespace IntegorTelegramBotListeningServices.EntityFramework
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
+			modelBuilder.Entity<EfTelegramBotWebhookInfo>(webhook =>
+			{
+				webhook.HasOne(webhook => webhook.Bot)
+					.WithOne(bot => bot.WebhookInfo)
+					.HasForeignKey<EfTelegramBotWebhookInfo>(webhook => webhook.BotId);
+			});
+
 			modelBuilder.Entity<EfTelegramMessage>(message =>
 			{
 				message.HasKey(message => new { message.MessageId, message.ChatId });

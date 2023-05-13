@@ -7,14 +7,24 @@ using System.Threading.Tasks;
 
 using System.IO;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Net.Http.Headers;
 
+using IntegorTelegramBotListeningShared;
 using IntegorTelegramBotListeningShared.ApiRetranslation.ApiContent;
 
 namespace IntegorTelegramBotListeningServices.ApiRetranslation.ApiContent
 {
-    public class StandardBotApiHttpContentParser : IBotApiHttpContentFactory
+    public class StandardBotApiHttpContentFactory : IBotApiHttpContentFactory
     {
+		private IJsonSerializerOptionsProvider _jsonOptionsProvider;
+
+		public StandardBotApiHttpContentFactory(
+			IJsonSerializerOptionsProvider jsonOptionsProvider)
+        {
+			_jsonOptionsProvider = jsonOptionsProvider;
+        }
+
         public HttpContent CreateMultipartFormContent(
             IEnumerable<MultipartFormContentDescriptor> contentParts, string boundary)
         {
@@ -49,5 +59,13 @@ namespace IntegorTelegramBotListeningServices.ApiRetranslation.ApiContent
 
             return content;
         }
-    }
+
+		public HttpContent CreateJsonContent<TBody>(TBody body)
+		{
+			JsonSerializerOptions options =
+				_jsonOptionsProvider.GetJsonSerializerOptions();
+
+			return JsonContent.Create(body, options: options);
+		}
+	}
 }

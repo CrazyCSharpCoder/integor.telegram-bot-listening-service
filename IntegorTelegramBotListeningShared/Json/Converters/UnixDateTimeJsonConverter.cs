@@ -6,7 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace IntegorTelegramBotListeningServices.JsonDeserialization.Converters
+namespace IntegorTelegramBotListeningShared.Json.Converters
 {
 	public class UnixDateTimeJsonConverter : JsonConverter<DateTime>
 	{

@@ -5,17 +5,17 @@ using Microsoft.AspNetCore.Mvc;
 
 using IntegorTelegramBotListeningDto;
 
-using IntegorTelegramBotListeningShared;
+using IntegorTelegramBotListeningShared.Bots;
 using IntegorTelegramBotListeningShared.EventsAggregation;
 
 using AutoMapper;
 
 namespace IntegorTelegramBotListeningService.Controllers
 {
-	using Dto;
-	using Filters;
+    using Dto;
+    using Filters;
 
-	[ApiController]
+    [ApiController]
 	[Route("bots")]
 	public class BotsManagementController : ControllerBase
 	{

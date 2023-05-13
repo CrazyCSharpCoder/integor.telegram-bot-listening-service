@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 using System.IO;
@@ -14,5 +13,6 @@ namespace IntegorTelegramBotListeningShared.ApiRetranslation.ApiContent
     {
         HttpContent CreateDefaultContent(Stream body, string? mediaType);
         HttpContent CreateMultipartFormContent(IEnumerable<MultipartFormContentDescriptor> contentParts, string boundary);
-    }
+		HttpContent CreateJsonContent<TBody>(TBody body);
+	}
 }
