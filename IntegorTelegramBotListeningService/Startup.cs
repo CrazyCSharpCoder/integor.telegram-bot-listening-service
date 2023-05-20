@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Builder;
 
 using Microsoft.EntityFrameworkCore;
 
+using ExternalServicesConfiguration;
+
 using IntegorTelegramBotListeningShared;
 using IntegorTelegramBotListeningShared.Bots;
 using IntegorTelegramBotListeningShared.Configuration;
@@ -14,8 +16,6 @@ using IntegorTelegramBotListeningShared.ApiRetranslation.ApiContent;
 
 using IntegorTelegramBotListeningShared.ApiAggregation.Aggregators;
 using IntegorTelegramBotListeningShared.ApiAggregation.DataDeserialization;
-
-using IntegorTelegramBotListeningShared.EventsAggregation;
 
 using IntegorTelegramBotListeningServices;
 using IntegorTelegramBotListeningServices.ApiRetranslation;
@@ -27,31 +27,34 @@ using IntegorTelegramBotListeningServices.Bots;
 using IntegorTelegramBotListeningServices.ApiAggregation.Aggregators;
 using IntegorTelegramBotListeningServices.ApiAggregation.DataDeserialization;
 
-using IntegorTelegramBotListeningServices.EventsAggregation;
-
 namespace IntegorTelegramBotListeningService
 {
     using Filters;
     using Helpers;
-    using Mapper.Profiles;
 
     public class Startup
 	{
 		public IConfiguration Configuration { get; }
 
 		private IConfiguration _telegramBotListeningServiceConfiguration;
+
 		private IConfiguration _telegramBotApiConfiguration;
+		private IConfiguration _dataServiceConfiguration;
 
         public Startup(IConfiguration configuration)
         {
 			Configuration = configuration;
 
 			_telegramBotListeningServiceConfiguration = new ConfigurationBuilder()
-				.AddJsonFile("service_config.json")
+				.AddJsonFile("serviceConfig.json")
 				.Build();
 
 			_telegramBotApiConfiguration = new ConfigurationBuilder()
-				.AddJsonFile("telegram_bot_api_config.json")
+				.AddJsonFile("ExternalServices/telegramBotApiConfig.json")
+				.Build();
+
+			_dataServiceConfiguration = new ConfigurationBuilder()
+				.AddJsonFile("ExternalServices/integorDataServiceConfig.json")
 				.Build();
         }
 
@@ -78,6 +81,7 @@ namespace IntegorTelegramBotListeningService
 
 			services.Configure<TelegramBotListeningServiceConfiguration>(_telegramBotListeningServiceConfiguration);
 			services.Configure<TelegramBotApiConfiguration>(_telegramBotApiConfiguration);
+			services.Configure<IntegorDataServiceConfiguration>(_dataServiceConfiguration);
 
 			services.AddSingleton<ITelegramBotApiUriBuilder, StandardTelegramBotApiUriBuilder>();
 
@@ -96,7 +100,7 @@ namespace IntegorTelegramBotListeningService
 					options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 				});
 
-			services.AddScoped<IBotsManagementService, EntityFrameworkBotsManagementService>();
+			services.AddScoped<IBotInfoAccessor, EntityFrameworkBotsManagementService>();
 			services.AddScoped<IBotWebhookManagementService, EntityFrameworkBotWebhookManagementService>();
 
 			services.AddScoped<IWebhookUpdateDeserializer, StandardWebhookUpdateDeserializer>();
@@ -104,16 +108,6 @@ namespace IntegorTelegramBotListeningService
 
 			services.AddScoped<ITelegramBotLongPollingAggregator, StandardTelegramBotLongPollingAggregator>();
 			services.AddScoped<ITelegramBotWebhookAggregator, StandardTelegramBotWebhookAggregator>();
-
-			services.AddScoped<IChatsAggregationService, EntityFrameworkChatsAggregationService>();
-			services.AddScoped<IUsersAggregationService, EntityFrameworkUsersAggregationService>();
-			services.AddScoped<IMessagesAggregationService, EntityFrameworkMessagesAggregationService>();
-
-			services.AddAutoMapper(
-				typeof(TelegramBotMapperProfile),
-				typeof(TelegramUserMapperProfile),
-				typeof(TelegramChatMapperProfile),
-				typeof(TelegramMessageMapperProfile));
 
 			services.AddSingleton<HttpRequestHelper>();
 			services.AddScoped<EntityFrameworkTransactionFilter>();

@@ -2,81 +2,51 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
+using System.IO;
+using System.Net.Http;
 
-using AutoMapper;
+using Microsoft.Extensions.Options;
 
-using Microsoft.EntityFrameworkCore;
+using ExternalServicesConfiguration;
 
 using IntegorTelegramBotListeningDto;
 using IntegorTelegramBotListeningShared.Bots;
 
 namespace IntegorTelegramBotListeningServices.Bots
 {
-    using EntityFramework;
-    using EntityFramework.Model;
-
-    public class EntityFrameworkBotsManagementService : IBotsManagementService
+    public class EntityFrameworkBotsManagementService : IBotInfoAccessor
     {
-        private IntegorTelegramBotListeningDataContext _db;
-        private IMapper _mapper;
+		private IntegorDataServiceConfiguration _dataServiceConfiguration;
 
-        public EntityFrameworkBotsManagementService(
-            IntegorTelegramBotListeningDataContext db,
-            IMapper mapper)
+		public EntityFrameworkBotsManagementService(
+			IOptions<IntegorDataServiceConfiguration> dataServiceOptions)
         {
-            _db = db;
-            _mapper = mapper;
-        }
+			_dataServiceConfiguration = dataServiceOptions.Value;
+		}
 
-        public async Task<TelegramBotInfoDto> AddAsync(TelegramBotInfoDto bot)
-        {
-            EfTelegramBot addedBotModel = _mapper.Map<TelegramBotInfoDto, EfTelegramBot>(bot);
-            // TODO сделать в виде атрибутов
-            addedBotModel.CreatedDate = addedBotModel.UpdatedDate = DateTime.UtcNow;
-
-            await _db.Bots.AddAsync(addedBotModel);
-			await _db.SaveChangesAsync();
-
-            return _mapper.Map<EfTelegramBot, TelegramBotInfoDto>(addedBotModel);
-        }
-
-        public async Task<TelegramBotInfoDto?> GetByIdAsync(int id)
-        {
-            EfTelegramBot? bot = await _db.Bots.FirstOrDefaultAsync(bot => bot.Id == id);
-
-            if (bot == null)
-                return null;
-
-            return _mapper.Map<EfTelegramBot, TelegramBotInfoDto>(bot);
-        }
-
-        public async Task<TelegramBotInfoDto?> GetByTokenAsync(string botToken)
-        {
-            EfTelegramBot? bot = await _db.Bots.FirstOrDefaultAsync(bot => bot.Token == botToken);
-
-            if (bot == null)
-                return null;
-
-            return _mapper.Map<EfTelegramBot, TelegramBotInfoDto>(bot);
-        }
-
-        public async Task<TelegramBotInfoDto> UpdateAsync(TelegramBotInfoDto bot)
-        {
-            EfTelegramBot updatedBotModel = _mapper.Map<TelegramBotInfoDto, EfTelegramBot>(bot);
-            // TODO сделать в виде атрибутов
-            updatedBotModel.UpdatedDate = DateTime.UtcNow;
-
-            _db.Bots.Update(updatedBotModel);
-			await _db.SaveChangesAsync();
-
-			return _mapper.Map<EfTelegramBot, TelegramBotInfoDto>(updatedBotModel);
-        }
-
-		public async Task<IEnumerable<TelegramBotInfoDto>> GetAllAsync()
+		public async Task<TelegramBotInfoDto?> GetByTokenAsync(string botToken)
 		{
-			IEnumerable<EfTelegramBot> bots = await _db.Bots.ToArrayAsync();
-			return bots.Select(bot => _mapper.Map<EfTelegramBot, TelegramBotInfoDto>(bot));
+			Uri uri = new Uri(_dataServiceConfiguration.Url);
+			uri = new Uri(uri, $"bot/{botToken}");
+
+			using HttpRequestMessage request =
+				new HttpRequestMessage(HttpMethod.Get, uri.AbsoluteUri);
+
+			using HttpClient client = new HttpClient();
+			using HttpResponseMessage response = await client.SendAsync(request);
+
+			using Stream body = await response.Content.ReadAsStreamAsync();
+
+			JsonElement jsonBody = await JsonSerializer.DeserializeAsync<JsonElement>(body);
+
+			JsonSerializerOptions jsonOptions = new JsonSerializerOptions()
+			{
+				PropertyNameCaseInsensitive = true
+			};
+
+			return jsonBody.GetProperty("bot").Deserialize<TelegramBotInfoDto>(jsonOptions);
 		}
 	}
 }

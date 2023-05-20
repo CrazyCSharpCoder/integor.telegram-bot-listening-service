@@ -4,38 +4,44 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using AutoMapper;
+using System.IO;
+
+using System.Net.Http;
+using System.Net.Http.Json;
+
+using Microsoft.Extensions.Options;
 
 using IntegorTelegramBotListeningDto;
-
-using IntegorTelegramBotListeningShared.EventsAggregation;
 using IntegorTelegramBotListeningShared.ApiAggregation.Aggregators;
 
 namespace IntegorTelegramBotListeningServices.ApiAggregation.Aggregators
 {
-	using Internal.Aggregators;
+	using ExternalServicesConfiguration;
 
 	public class StandardTelegramBotWebhookAggregator : ITelegramBotWebhookAggregator
 	{
-		private EventsAggregationHelper _aggregationHelper;
+		private IntegorDataServiceConfiguration _dataServiceConfiguration;
 
 		public StandardTelegramBotWebhookAggregator(
-			IChatsAggregationService chatsAggregator,
-			IUsersAggregationService usersAggregator,
-			IMessagesAggregationService messagesAggregator,
-
-			IMapper mapper)
+			IOptions<IntegorDataServiceConfiguration> dataServiceOptions)
         {
-			_aggregationHelper = new EventsAggregationHelper(
-				chatsAggregator, usersAggregator, messagesAggregator, mapper);
+			_dataServiceConfiguration = dataServiceOptions.Value;
         }
 
         public async Task AggregateAsync(TelegramUpdateDto update, int botId)
 		{
-			if (update.Message == null)
-				return;
+			Uri uri = new Uri(_dataServiceConfiguration.Url);
+			uri = new Uri(uri, $"telegram-events/aggregate-single/{botId}");
 
-			await _aggregationHelper.AggregateMessageAsync(update.Message, botId);
+			using HttpContent content = JsonContent.Create(update);
+			using HttpRequestMessage request =
+				new HttpRequestMessage(HttpMethod.Post, uri.AbsoluteUri)
+				{
+					Content = content
+				};
+
+			using HttpClient client = new HttpClient();
+			await client.SendAsync(request);
 		}
 	}
 }

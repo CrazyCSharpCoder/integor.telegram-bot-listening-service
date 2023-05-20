@@ -15,11 +15,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ExternalServicesConfiguration\ExternalServicesConfiguration.csproj" />
     <ProjectReference Include="..\IntegorTelegramBotListeningServices\IntegorTelegramBotListeningServices.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Update="service_config.json">
+    <Content Update="serviceConfig.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

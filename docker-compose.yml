@@ -1,21 +1,21 @@
 version: '3.5'
 
 services:
-  integor_telegram_bots_events_db:
+  integor_telegram_bots_tracking_db:
     image: postgres:14.5
-    container_name: integor_telegram_bots_events_db
+    container_name: integor_telegram_bots_tracking_db
     ports:
       - 5434:5432
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=admin
-      - POSTGRES_DB=integor_telegram_bots_events
+      - POSTGRES_DB=integor_telegram_bots_tracking
     networks:
-      - integor_telegram_bots_events_network
+      - integor_telegram_bots_tracking_network
 
-  telegram_bots_events_db_admin:
+  telegram_bots_tracking_db_admin:
     image: dpage/pgadmin4:6.20
-    container_name: integor_telegram_bots_events_db_admin
+    container_name: integor_telegram_bots_tracking_db_admin
     ports:
       - "8081:80"
     environment:
@@ -23,9 +23,9 @@ services:
       - PGADMIN_DEFAULT_PASSWORD=1234567890
       - PGADMIN_LISTEN_PORT=80
     networks:
-      - integor_telegram_bots_events_network
+      - integor_telegram_bots_tracking_network
   
 networks:
-  integor_telegram_bots_events_network:
+  integor_telegram_bots_tracking_network:
     driver: bridge
     

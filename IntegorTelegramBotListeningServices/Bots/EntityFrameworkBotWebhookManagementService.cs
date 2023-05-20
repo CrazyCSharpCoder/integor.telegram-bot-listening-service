@@ -4,65 +4,56 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using AutoMapper;
-
-using Microsoft.EntityFrameworkCore;
+using IntegorTelegramBotListeningModel;
 
 using IntegorTelegramBotListeningShared.Bots;
 
 namespace IntegorTelegramBotListeningServices.Bots
 {
 	using EntityFramework;
-	using EntityFramework.Model;
-	using IntegorTelegramBotListeningModel;
+	using EntityFramework.Internal;
 
 	public class EntityFrameworkBotWebhookManagementService : IBotWebhookManagementService
 	{
-		private IntegorTelegramBotListeningDataContext _db;
-		private IMapper _mapper;
+		private IntegorTelegramBotListeningDataContext _context;
 
 		public EntityFrameworkBotWebhookManagementService(
-			IntegorTelegramBotListeningDataContext db,
-			IMapper mapper)
+			IntegorTelegramBotListeningDataContext context)
         {
-			_db = db;
-			_mapper = mapper;
+			_context = context;
         }
 
-		public async Task<TelegramBotWebhookInfo?> GetAsync(int botId)
+		public Task<TelegramBotWebhookInfo?> GetAsync(int webhookId)
 		{
-			return await GetEfModelAsync(botId);
+			return _context.Webhooks.GetByIdAsync(webhookId);
 		}
 
 		public async Task<TelegramBotWebhookInfo> SetAsync(TelegramBotWebhookInfo webhook)
 		{
-			EfTelegramBotWebhookInfo? oldWebhook = await GetEfModelAsync(webhook.BotId);
+			TelegramBotWebhookInfo? oldWebhook =
+				await _context.Webhooks.GetByIdAsync(webhook.Id);
 
 			if (oldWebhook != null)
-				_db.Webhooks.Remove(oldWebhook);
+				_context.Webhooks.Remove(oldWebhook);
 
-			EfTelegramBotWebhookInfo addedWebhookModel =
-				_mapper.Map<TelegramBotWebhookInfo, EfTelegramBotWebhookInfo>(webhook);
+			await _context.Webhooks.AddAsync(webhook);
+			await _context.SaveChangesAsync();
 
-			await _db.Webhooks.AddAsync(addedWebhookModel);
-
-			return addedWebhookModel;
+			return webhook;
 		}
 
-		public async Task<TelegramBotWebhookInfo> DeleteAsync(int botId)
+		public async Task<TelegramBotWebhookInfo?> DeleteAsync(int webhookId)
 		{
-			EfTelegramBotWebhookInfo? oldWebhook = await GetEfModelAsync(botId);
+			TelegramBotWebhookInfo? oldWebhook =
+				await _context.Webhooks.GetReruiredByIdAsync(webhookId);
 
 			if (oldWebhook == null)
-				throw new InvalidOperationException("Bot with specified id does not exist");
+				return null;
 
-			_db.Webhooks.Remove(oldWebhook);
+			_context.Webhooks.Remove(oldWebhook);
+			await _context.SaveChangesAsync();
+
 			return oldWebhook;
-		}
-
-		private async Task<EfTelegramBotWebhookInfo?> GetEfModelAsync(int botId)
-		{
-			return await _db.Webhooks.FirstOrDefaultAsync(webhook => webhook.BotId == botId);
 		}
 	}
 }

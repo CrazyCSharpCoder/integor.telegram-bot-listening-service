@@ -48,7 +48,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 		private IBotApiHttpContentFactory _contentFactory;
 		private IHttpResponseMessageToHttpResponseAssigner _responseToAsp;
 
-		private IBotsManagementService _botsManagement;
+		private IBotInfoAccessor _botAccessor;
 		private IBotWebhookManagementService _botWebhooksManagement;
 
 		private IWebhookUpdateDeserializer _updatesDeserializer;
@@ -66,7 +66,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 			IBotApiHttpContentFactory contentFactory,
 			IHttpResponseMessageToHttpResponseAssigner responseToAsp,
 
-			IBotsManagementService botsManagement,
+			IBotInfoAccessor botsManagement,
 			IBotWebhookManagementService botWebhooksManagement,
 
 			IWebhookUpdateDeserializer updatesDeserializer,
@@ -83,7 +83,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 			_contentFactory = contentFactory;
 			_responseToAsp = responseToAsp;
 
-			_botsManagement = botsManagement;
+			_botAccessor = botsManagement;
 			_botWebhooksManagement = botWebhooksManagement;
 
 			_updatesDeserializer = updatesDeserializer;
@@ -94,7 +94,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 		[ServiceFilter(typeof(EntityFrameworkTransactionFilter))]
 		public async Task SetWebhookAsync(string botToken, TelegramWebhookDto webhookDto)
 		{
-			TelegramBotInfoDto? bot = await _botsManagement.GetByTokenAsync(botToken);
+			// TODO get using IntegorServicesInteractionHelpers and show erros
+			TelegramBotInfoDto? bot = await _botAccessor.GetByTokenAsync(botToken);
 
 			if (bot == null)
 				// TODO return error
@@ -115,7 +116,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 			// webhook к боту, что явялется ошибкой
 			TelegramBotWebhookInfo webhook = new TelegramBotWebhookInfo()
 			{
-				BotId = bot.Id,
+				Id = bot.Id,
 				Url = botUrl
 			};
 			await _botWebhooksManagement.SetAsync(webhook);
@@ -136,7 +137,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 		public async Task DeleteWebhookAsync(string botToken, DeleteWebhookDto deleteDto)
 		{
 			// TODO accept DeleteWebhookDto from query string in snake case notation
-			TelegramBotInfoDto? bot = await _botsManagement.GetByTokenAsync(botToken);
+			TelegramBotInfoDto? bot = await _botAccessor.GetByTokenAsync(botToken);
 
 			if (bot == null)
 				// TODO return error
@@ -171,7 +172,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 		[ServiceFilter(typeof(EntityFrameworkTransactionFilter))]
 		public async Task TranslateWebhookAsync(string botToken)
 		{
-			TelegramBotInfoDto? bot = await _botsManagement.GetByTokenAsync(botToken);
+			TelegramBotInfoDto? bot = await _botAccessor.GetByTokenAsync(botToken);
 
 			if (bot == null)
 				// TODO consider in what situations it can happen and handle errors

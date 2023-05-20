@@ -10,8 +10,8 @@ namespace IntegorTelegramBotListeningShared.Bots
 {
 	public interface IBotWebhookManagementService
 	{
-		Task<TelegramBotWebhookInfo?> GetAsync(int botId);
+		Task<TelegramBotWebhookInfo?> GetAsync(int webhookId);
 		Task<TelegramBotWebhookInfo> SetAsync(TelegramBotWebhookInfo webhook);
-		Task<TelegramBotWebhookInfo> DeleteAsync(int botId);
+		Task<TelegramBotWebhookInfo?> DeleteAsync(int webhookId);
 	}
 }

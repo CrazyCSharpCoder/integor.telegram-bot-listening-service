@@ -38,7 +38,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 		private IBotApiHttpContentFactory _contentFactory;
 		private IHttpResponseMessageToHttpResponseAssigner _responseToAsp;
 
-		private IBotsManagementService _botsManagement;
+		private IBotInfoAccessor _botsManagement;
 
 		private ILongPollingUpdatesDeserializer _updatesDeserializer;
 		private ITelegramBotLongPollingAggregator _updatesAggregator;
@@ -52,7 +52,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 			IBotApiHttpContentFactory contentFactory,
 			IHttpResponseMessageToHttpResponseAssigner responseToAsp,
 
-			IBotsManagementService botsManagement,
+			IBotInfoAccessor botsManagement,
 
 			ILongPollingUpdatesDeserializer updatesDeserializer,
 			ITelegramBotLongPollingAggregator updatesAggregator)
