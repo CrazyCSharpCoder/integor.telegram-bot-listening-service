@@ -117,7 +117,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 			TelegramBotWebhookInfo webhook = new TelegramBotWebhookInfo()
 			{
 				Id = bot.Id,
-				Url = botUrl
+				Url = botUrl,
+				BotTokenCache = botToken
 			};
 			await _botWebhooksManagement.SetAsync(webhook);
 
@@ -150,7 +151,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 			if (response.IsSuccessStatusCode)
 			{
-				TelegramBotWebhookInfo? webhook = await _botWebhooksManagement.GetAsync(bot.Id);
+				TelegramBotWebhookInfo? webhook = await _botWebhooksManagement.GetByIdAsync(bot.Id);
 
 				if (webhook != null)
 					await _botWebhooksManagement.DeleteAsync(bot.Id);
@@ -172,13 +173,29 @@ namespace IntegorTelegramBotListeningService.Controllers
 		[ServiceFilter(typeof(EntityFrameworkTransactionFilter))]
 		public async Task TranslateWebhookAsync(string botToken)
 		{
-			TelegramBotInfoDto? bot = await _botAccessor.GetByTokenAsync(botToken);
+			TelegramBotInfoDto? bot = null;
+			bool connectionFailed = false;
 
-			if (bot == null)
-				// TODO consider in what situations it can happen and handle errors
-				throw new System.Exception();
+			try { bot = await _botAccessor.GetByTokenAsync(botToken); }
+			catch { connectionFailed = true; }
 
-			TelegramBotWebhookInfo? webhook = await _botWebhooksManagement.GetAsync(bot.Id);
+			TelegramBotWebhookInfo? webhook;
+
+			if (connectionFailed)
+			{
+				// Если не удалось установить соединение с сервисом,
+				// используем закэшированную информацию
+
+				webhook = await _botWebhooksManagement.GetByTokenCacheAsync(botToken);
+			}
+			else
+			{
+				if (bot == null)
+					// TODO consider in what situations it can happen and handle errors
+					throw new System.Exception();
+
+				webhook = await _botWebhooksManagement.GetByIdAsync(bot.Id);
+			}
 
 			if (webhook == null)
 				// TODO consider in what situations it can happen and handle errors
@@ -186,12 +203,15 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 			HttpContent content;
 
-			if (IsApplicationJson(Request))
+			// Если формат данных json, и бот был раннее получен от сервиса с данными
+			// (то есть не было проблем с соединением)
+			if (bot != null && IsApplicationJson(Request))
 			{
 				JsonSerializerOptions jsonOptions = _jsonOptionsProvider.GetJsonSerializerOptions();
 				JsonElement jsonBody = await JsonSerializer.DeserializeAsync<JsonElement>(Request.Body, options: jsonOptions);
 
-				await AggregateWebhookAsync(jsonBody, bot.Id);
+				try { await AggregateWebhookAsync(jsonBody, bot.Id); }
+				catch { /* Ignore */ }
 
 				content = _contentFactory.CreateJsonContent(jsonBody);
 			}

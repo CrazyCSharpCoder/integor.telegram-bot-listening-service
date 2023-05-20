@@ -4,8 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using IntegorTelegramBotListeningModel;
+using Microsoft.EntityFrameworkCore;
 
+using IntegorTelegramBotListeningModel;
 using IntegorTelegramBotListeningShared.Bots;
 
 namespace IntegorTelegramBotListeningServices.Bots
@@ -23,9 +24,15 @@ namespace IntegorTelegramBotListeningServices.Bots
 			_context = context;
         }
 
-		public Task<TelegramBotWebhookInfo?> GetAsync(int webhookId)
+		public Task<TelegramBotWebhookInfo?> GetByIdAsync(int webhookId)
 		{
 			return _context.Webhooks.GetByIdAsync(webhookId);
+		}
+
+		public Task<TelegramBotWebhookInfo?> GetByTokenCacheAsync(string botToken)
+		{
+			return _context.Webhooks.FirstOrDefaultAsync(
+				webhook => webhook.BotTokenCache == botToken);
 		}
 
 		public async Task<TelegramBotWebhookInfo> SetAsync(TelegramBotWebhookInfo webhook)
@@ -54,6 +61,19 @@ namespace IntegorTelegramBotListeningServices.Bots
 			await _context.SaveChangesAsync();
 
 			return oldWebhook;
+		}
+
+		public async Task<TelegramBotWebhookInfo> UpdateTokenCacheAsync(int webhookId, string newToken)
+		{
+			TelegramBotWebhookInfo webhook =
+				await _context.Webhooks.GetReruiredByIdAsync(webhookId);
+
+			webhook.BotTokenCache = newToken;
+
+			_context.Webhooks.Update(webhook);
+			await _context.SaveChangesAsync();
+
+			return webhook;
 		}
 	}
 }

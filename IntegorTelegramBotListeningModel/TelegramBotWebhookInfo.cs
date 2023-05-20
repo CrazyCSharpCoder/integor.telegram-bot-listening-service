@@ -15,5 +15,7 @@ namespace IntegorTelegramBotListeningModel
 		[DatabaseGenerated(DatabaseGeneratedOption.None)]
 		public int Id { get; set; }
 		public string Url { get; set; } = null!;
+
+		public string BotTokenCache { get; set; } = null!;
 	}
 }
