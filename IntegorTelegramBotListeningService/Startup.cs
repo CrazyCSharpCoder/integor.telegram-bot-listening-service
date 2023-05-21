@@ -84,6 +84,7 @@ namespace IntegorTelegramBotListeningService
 			// Configuring decorated object parsers
 			services.AddIntegorServicesJsonErrorsParsing();
 			services.AddSingleton<IDecoratedObjectParser<TelegramBotInfoDto, JsonElement>, JsonTelegramBotParser>();
+			services.AddSingleton<IDecoratedObjectParser<TelegramMessageInfoDto, JsonElement>, JsonTelegramMessageParser>();
 
 			// Configuring infrastructure
 			services.AddSingleton<IJsonSerializerOptionsProvider, StandardJsonSerializerOptionsProvider>();
@@ -114,8 +115,6 @@ namespace IntegorTelegramBotListeningService
 			services.AddSingleton<IWebhookInvoker, StandardWebhookInvoker>();
 			services.AddSingleton<IHttpResponseMessageToHttpResponseAssigner, StandardHttpResponseMessageToHttpResponseAssigner>();
 
-			services.AddScoped<ITelegramBotLongPollingAggregator, StandardTelegramBotLongPollingAggregator>();
-
 			services.AddDbContext<IntegorTelegramBotListeningDataContext>(
 				options =>
 				{
@@ -133,6 +132,7 @@ namespace IntegorTelegramBotListeningService
 
 			services.AddScoped<ITelegramBotLongPollingAggregator, StandardTelegramBotLongPollingAggregator>();
 			services.AddScoped<ITelegramBotWebhookAggregator, StandardTelegramBotWebhookAggregator>();
+			services.AddScoped<ITelegramBotApiAggregator, StandardTelegramBotApiAggregator>();
 
 			// Configuring extras
 			services.AddSingleton<HttpRequestHelper>();

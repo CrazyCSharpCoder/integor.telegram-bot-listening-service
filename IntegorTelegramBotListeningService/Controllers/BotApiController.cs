@@ -42,6 +42,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 		private ILongPollingUpdatesDeserializer _updatesDeserializer;
 		private ITelegramBotLongPollingAggregator _updatesAggregator;
+		private ITelegramBotApiAggregator _apiAggregator;
 
 		public BotApiController(
 			HttpRequestHelper requestHelper,
@@ -55,7 +56,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 			IBotInfoAccessor botsManagement,
 
 			ILongPollingUpdatesDeserializer updatesDeserializer,
-			ITelegramBotLongPollingAggregator updatesAggregator)
+			ITelegramBotLongPollingAggregator updatesAggregator,
+			ITelegramBotApiAggregator apiAggregator)
         {
 			_requestHelper = requestHelper;
 			_contentFactory = contentFactory;
@@ -69,7 +71,9 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 			_updatesDeserializer = updatesDeserializer;
 			_updatesAggregator = updatesAggregator;
-        }
+
+			_apiAggregator = apiAggregator;
+		}
 
 		[Route("bot{botToken}/{apiMethod}")]
 		[IgnoreExceptionFilter]
@@ -108,8 +112,14 @@ namespace IntegorTelegramBotListeningService.Controllers
 			if (apiMethod.ToLower() == _getUpdatesApiMethodName.ToLower())
 			{
 				try { await AggregateUpdatesAsync(jsonBody, botId.Value); }
-				catch { /*Ignore*/ }
+				catch { /* Ignore */ }
 			}
+			else if (IsApplicationJson(response.Content) &&
+				await _apiAggregator.AllowAggregationAsync(apiMethod))
+			{
+				try { await _apiAggregator.AggregateAsync(jsonBody, botId.Value); }
+				catch { /* Ignore */}
+			};
 
 			using HttpContent responseContent = _contentFactory.CreateJsonContent(jsonBody);
 
