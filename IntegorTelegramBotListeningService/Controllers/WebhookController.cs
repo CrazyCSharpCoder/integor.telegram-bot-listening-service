@@ -8,6 +8,12 @@ using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
+using IntegorErrorsHandling;
+using IntegorErrorsHandling.Filters;
+using IntegorErrorsHandling.Converters;
+
+using IntegorSharedResponseDecorators.Shared.Attributes;
+
 using IntegorTelegramBotListeningModel;
 
 using IntegorTelegramBotListeningDto;
@@ -28,6 +34,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 	using Filters;
 	using Helpers;
 
+	using Settings.ErrorMessages;
+
 	[ApiController]
 	[Route("bot{botToken}")]
 	public class WebhookController : ControllerBase
@@ -38,6 +46,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 		private const string _deleteWebhookApiMethod = "deleteWebhook";
 
 		private TelegramBotListeningServiceConfiguration _serviceConfiguration;
+
+		private IStringErrorConverter _stringError;
 
 		private HttpRequestHelper _requestHelper;
 
@@ -57,6 +67,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 		public WebhookController(
 			IOptions<TelegramBotListeningServiceConfiguration> serviceOptions,
 
+			IStringErrorConverter stringError,
+
 			HttpRequestHelper requestHelper,
 
 			IJsonSerializerOptionsProvider jsonOptionsProvider,
@@ -74,6 +86,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 		{
 			_serviceConfiguration = serviceOptions.Value;
 
+			_stringError = stringError;
+
 			_requestHelper = requestHelper;
 
 			_jsonOptionsProvider = jsonOptionsProvider;
@@ -90,16 +104,23 @@ namespace IntegorTelegramBotListeningService.Controllers
 			_updatesAggregator = updatesAggregator;
 		}
 
+		[ExceptionHandling]
 		[Route("setWebhook")]
+		[DecorateErrorsResponse]
+		[ExtensibleExceptionHandlingLazyFilterFactory]
 		[ServiceFilter(typeof(EntityFrameworkTransactionFilter))]
-		public async Task SetWebhookAsync(string botToken, TelegramWebhookDto webhookDto)
+		public async Task<IActionResult> SetWebhookAsync(string botToken, TelegramWebhookDto webhookDto)
 		{
-			// TODO get using IntegorServicesInteractionHelpers and show erros
+			// TODO get using IntegorServicesInteractionHelpers and show errors
 			TelegramBotInfoDto? bot = await _botAccessor.GetByTokenAsync(botToken);
 
 			if (bot == null)
-				// TODO return error
-				throw new System.Exception("Bot with specified id is not registered");
+			{
+				IErrorConvertationResult error = _stringError.Convert(
+					BotErrorMessages.BotWithIdDoesNotExist)!;
+
+				return BadRequest(error);
+			}
 
 			// Webhook, отправляемый на Telegram Bot API, устанавливается на метод контроллера 
 			// TranslateWebhookAsync, который отправляет новый webhook боту
@@ -131,18 +152,27 @@ namespace IntegorTelegramBotListeningService.Controllers
 				await _botWebhooksManagement.DeleteAsync(bot.Id);
 
 			await _responseToAsp.AssignAsync(Response, response);
+
+			return new EmptyResult();
 		}
 
+		[ExceptionHandling]
 		[Route("deleteWebhook")]
+		[DecorateErrorsResponse]
+		[ExtensibleExceptionHandlingLazyFilterFactory]
 		[ServiceFilter(typeof(EntityFrameworkTransactionFilter))]
-		public async Task DeleteWebhookAsync(string botToken, DeleteWebhookDto deleteDto)
+		public async Task<IActionResult> DeleteWebhookAsync(string botToken, DeleteWebhookDto deleteDto)
 		{
 			// TODO accept DeleteWebhookDto from query string in snake case notation
 			TelegramBotInfoDto? bot = await _botAccessor.GetByTokenAsync(botToken);
 
 			if (bot == null)
-				// TODO return error
-				throw new System.Exception("Bot with specified id is not registered");
+			{
+				IErrorConvertationResult error = _stringError.Convert(
+					BotErrorMessages.BotWithIdDoesNotExist)!;
+
+				return BadRequest(error);
+			}
 
 			using HttpContent httpContent = _contentFactory.CreateJsonContent(deleteDto);
 			using HttpResponseMessage response = await _api.SendAsync(
@@ -151,13 +181,16 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 			if (response.IsSuccessStatusCode)
 			{
-				TelegramBotWebhookInfo? webhook = await _botWebhooksManagement.GetByIdAsync(bot.Id);
+				TelegramBotWebhookInfo? webhook =
+					await _botWebhooksManagement.GetByIdAsync(bot.Id);
 
 				if (webhook != null)
 					await _botWebhooksManagement.DeleteAsync(bot.Id);
 			}
 
 			await _responseToAsp.AssignAsync(Response, response);
+
+			return new EmptyResult();
 		}
 
 		// TODO create own class for webhook info with additional information about
@@ -169,37 +202,27 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 		//}
 
+		[ExceptionHandling]
+		[DecorateErrorsResponse]
+		[ExtensibleExceptionHandlingLazyFilterFactory]
 		[HttpPost(_translateWebhookControllerPath)]
 		[ServiceFilter(typeof(EntityFrameworkTransactionFilter))]
-		public async Task TranslateWebhookAsync(string botToken)
+		public async Task<IActionResult> TranslateWebhookAsync(string botToken)
 		{
 			TelegramBotInfoDto? bot = null;
-			bool connectionFailed = false;
 
 			try { bot = await _botAccessor.GetByTokenAsync(botToken); }
-			catch { connectionFailed = true; }
+			catch { /* Ignore */ }
 
-			TelegramBotWebhookInfo? webhook;
-
-			if (connectionFailed)
-			{
-				// Если не удалось установить соединение с сервисом,
-				// используем закэшированную информацию
-
-				webhook = await _botWebhooksManagement.GetByTokenCacheAsync(botToken);
-			}
-			else
-			{
-				if (bot == null)
-					// TODO consider in what situations it can happen and handle errors
-					throw new System.Exception();
-
-				webhook = await _botWebhooksManagement.GetByIdAsync(bot.Id);
-			}
+			TelegramBotWebhookInfo? webhook = await _botWebhooksManagement.GetByTokenCacheAsync(botToken);
 
 			if (webhook == null)
-				// TODO consider in what situations it can happen and handle errors
-				throw new System.Exception();
+			{
+				IErrorConvertationResult error = _stringError.Convert(
+					"Webhook was not set via the service")!;
+
+				return BadRequest(error);
+			}
 
 			HttpContent content;
 
@@ -224,6 +247,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 				await _webhookInvoker.InvokeWebhookAsync(webhook.Url, content);
 
 			await _responseToAsp.AssignAsync(Response, response);
+
+			return new EmptyResult();
 		}
 
 		private string ComposeUrlOfWebhook(string botToken)

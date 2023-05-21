@@ -1,11 +1,21 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Text.Json;
+
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 
 using Microsoft.AspNetCore.Builder;
 
 using Microsoft.EntityFrameworkCore;
 
+using IntegorResponseDecoration.Parsing;
+using IntegorAspHelpers.Middleware.WebApiResponse;
+
+using IntegorServiceConfiguration;
+using IntegorServiceConfiguration.IntegorServicesInteraction;
+
 using ExternalServicesConfiguration;
+
+using IntegorTelegramBotListeningDto;
 
 using IntegorTelegramBotListeningShared;
 using IntegorTelegramBotListeningShared.Bots;
@@ -21,9 +31,10 @@ using IntegorTelegramBotListeningServices;
 using IntegorTelegramBotListeningServices.ApiRetranslation;
 using IntegorTelegramBotListeningServices.ApiRetranslation.ApiContent;
 
-using IntegorTelegramBotListeningServices.EntityFramework;
 using IntegorTelegramBotListeningServices.Bots;
+using IntegorTelegramBotListeningServices.EntityFramework;
 
+using IntegorTelegramBotListeningServices.ObjectParsers;
 using IntegorTelegramBotListeningServices.ApiAggregation.Aggregators;
 using IntegorTelegramBotListeningServices.ApiAggregation.DataDeserialization;
 
@@ -32,7 +43,7 @@ namespace IntegorTelegramBotListeningService
     using Filters;
     using Helpers;
 
-    public class Startup
+	public class Startup
 	{
 		public IConfiguration Configuration { get; }
 
@@ -60,6 +71,21 @@ namespace IntegorTelegramBotListeningService
 
 		public void ConfigureServices(IServiceCollection services)
 		{
+			// Configuring errors handling
+			services.AddExceptionConverting();
+			services.AddDatabaseExceptionConverters();
+
+			services.AddPrimaryTypesErrorConverters();
+			services.AddResponseErrorsObjectCompiler();
+
+			// Configuring response decorators
+			services.AddErrorResponseDecorator();
+
+			// Configuring decorated object parsers
+			services.AddIntegorServicesJsonErrorsParsing();
+			services.AddSingleton<IDecoratedObjectParser<TelegramBotInfoDto, JsonElement>, JsonTelegramBotParser>();
+
+			// Configuring infrastructure
 			services.AddSingleton<IJsonSerializerOptionsProvider, StandardJsonSerializerOptionsProvider>();
 
 			services.AddCors(options =>
@@ -79,12 +105,17 @@ namespace IntegorTelegramBotListeningService
 				optionsProvider.AssignJsonSerizalizerOptions(options.JsonSerializerOptions);
 			});
 
+			services.AddHttpContextAccessor();
+			services.AddDefaultStatusCodeResponseBodyFactory();
+
+			// Configuring options
 			services.Configure<TelegramBotListeningServiceConfiguration>(_telegramBotListeningServiceConfiguration);
 			services.Configure<TelegramBotApiConfiguration>(_telegramBotApiConfiguration);
 			services.Configure<IntegorDataServiceConfiguration>(_dataServiceConfiguration);
 
 			services.AddSingleton<ITelegramBotApiUriBuilder, StandardTelegramBotApiUriBuilder>();
 
+			// Configuring api retranslation services
 			services.AddSingleton<IMultipartContentTypesTransformer, StandardMultipartContentTypesTransformer>();
 			services.AddSingleton<IBotApiHttpContentFactory, StandardBotApiHttpContentFactory>();
 			services.AddSingleton<ITelegramBotApiGate, StandardTelegramBotApiGate>();
@@ -100,21 +131,27 @@ namespace IntegorTelegramBotListeningService
 					options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 				});
 
-			services.AddScoped<IBotInfoAccessor, EntityFrameworkBotsManagementService>();
+			// Configuring data logic services
+			services.AddScoped<IBotInfoAccessor, DataServiceBotInfoAccessor>();
 			services.AddScoped<IBotWebhookManagementService, EntityFrameworkBotWebhookManagementService>();
 
+			// Configuring aggregation services
 			services.AddScoped<IWebhookUpdateDeserializer, StandardWebhookUpdateDeserializer>();
 			services.AddScoped<ILongPollingUpdatesDeserializer, StandardLongPollingUpdatesDeserializer>();
 
 			services.AddScoped<ITelegramBotLongPollingAggregator, StandardTelegramBotLongPollingAggregator>();
 			services.AddScoped<ITelegramBotWebhookAggregator, StandardTelegramBotWebhookAggregator>();
 
+			// Configuring extras
 			services.AddSingleton<HttpRequestHelper>();
 			services.AddScoped<EntityFrameworkTransactionFilter>();
 		}
 
         public void Configure(IApplicationBuilder app)
 		{
+			app.UseWebApiExceptionsHandling();
+			app.UseWebApiStatusCodesHandling();
+
 			app.UseRouting();
 			app.UseCors();
 			app.UseEndpoints(endpoints =>
