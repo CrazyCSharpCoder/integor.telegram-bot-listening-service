@@ -99,7 +99,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 				return;
 			}
 
-			Stream streamResponseBody = await response.Content.ReadAsStreamAsync();
+			using Stream streamResponseBody = await response.Content.ReadAsStreamAsync();
 			JsonSerializerOptions jsonOptions = _jsonOptionsProvider.GetJsonSerializerOptions();
 
 			JsonElement jsonBody = await JsonSerializer.DeserializeAsync<JsonElement>(

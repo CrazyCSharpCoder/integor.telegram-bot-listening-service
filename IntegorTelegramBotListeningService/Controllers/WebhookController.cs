@@ -139,7 +139,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 			{
 				Id = bot.Id,
 				Url = botUrl,
-				BotTokenCache = botToken
+				BotToken = botToken
 			};
 			await _botWebhooksManagement.SetAsync(webhook);
 
@@ -149,7 +149,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 				botToken, _setWebhookApiMethod);
 
 			if (!response.IsSuccessStatusCode)
-				await _botWebhooksManagement.DeleteAsync(bot.Id);
+				await _botWebhooksManagement.DeleteAsync(botToken);
 
 			await _responseToAsp.AssignAsync(Response, response);
 
@@ -182,10 +182,10 @@ namespace IntegorTelegramBotListeningService.Controllers
 			if (response.IsSuccessStatusCode)
 			{
 				TelegramBotWebhookInfo? webhook =
-					await _botWebhooksManagement.GetByIdAsync(bot.Id);
+					await _botWebhooksManagement.GetByBotTokenAsync(botToken);
 
 				if (webhook != null)
-					await _botWebhooksManagement.DeleteAsync(bot.Id);
+					await _botWebhooksManagement.DeleteAsync(botToken);
 			}
 
 			await _responseToAsp.AssignAsync(Response, response);
@@ -214,7 +214,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 			try { bot = await _botAccessor.GetByTokenAsync(botToken); }
 			catch { /* Ignore */ }
 
-			TelegramBotWebhookInfo? webhook = await _botWebhooksManagement.GetByTokenCacheAsync(botToken);
+			TelegramBotWebhookInfo? webhook = await _botWebhooksManagement.GetByBotTokenAsync(botToken);
 
 			if (webhook == null)
 			{

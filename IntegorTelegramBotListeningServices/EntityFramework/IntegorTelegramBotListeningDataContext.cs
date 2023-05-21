@@ -18,5 +18,13 @@ namespace IntegorTelegramBotListeningServices.EntityFramework
 			: base(options)
 		{
 		}
+
+		protected override void OnModelCreating(ModelBuilder modelBuilder)
+		{
+			modelBuilder.Entity<TelegramBotWebhookInfo>(webhook =>
+			{
+				webhook.HasIndex(webhook => webhook.BotToken).IsUnique();
+			});
+		}
 	}
 }

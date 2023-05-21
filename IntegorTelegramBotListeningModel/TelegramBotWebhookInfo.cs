@@ -12,10 +12,9 @@ namespace IntegorTelegramBotListeningModel
 	public class TelegramBotWebhookInfo
 	{
 		[Key]
-		[DatabaseGenerated(DatabaseGeneratedOption.None)]
 		public int Id { get; set; }
 		public string Url { get; set; } = null!;
 
-		public string BotTokenCache { get; set; } = null!;
+		public string BotToken { get; set; } = null!;
 	}
 }

@@ -22,8 +22,6 @@ using IntegorTelegramBotListeningShared.Bots;
 
 namespace IntegorTelegramBotListeningServices.Bots
 {
-	using ObjectParsers;
-
     public class DataServiceBotInfoAccessor : IBotInfoAccessor
     {
 		private IDecoratedObjectParser<TelegramBotInfoDto, JsonElement> _botParser;
@@ -37,7 +35,7 @@ namespace IntegorTelegramBotListeningServices.Bots
         {
 			_botParser = botParser;
 			_requestProcessor = new JsonServicesRequestProcessor<IntegorDataServiceConfiguration>(
-				errorsParser, dataServiceOptions, "bot");
+				errorsParser, dataServiceOptions, "bots");
 		}
 
 		public async Task<TelegramBotInfoDto?> GetByTokenAsync(string botToken)

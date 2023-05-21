@@ -16,7 +16,7 @@ namespace IntegorTelegramBotListeningServices.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.12")
+                .HasAnnotation("ProductVersion", "6.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -24,9 +24,12 @@ namespace IntegorTelegramBotListeningServices.Migrations
             modelBuilder.Entity("IntegorTelegramBotListeningModel.TelegramBotWebhookInfo", b =>
                 {
                     b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    b.Property<string>("BotTokenCache")
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BotToken")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -35,6 +38,9 @@ namespace IntegorTelegramBotListeningServices.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BotToken")
+                        .IsUnique();
 
                     b.ToTable("Webhooks");
                 });

@@ -24,15 +24,10 @@ namespace IntegorTelegramBotListeningServices.Bots
 			_context = context;
         }
 
-		public Task<TelegramBotWebhookInfo?> GetByIdAsync(int webhookId)
-		{
-			return _context.Webhooks.GetByIdAsync(webhookId);
-		}
-
-		public Task<TelegramBotWebhookInfo?> GetByTokenCacheAsync(string botToken)
+		public Task<TelegramBotWebhookInfo?> GetByBotTokenAsync(string botToken)
 		{
 			return _context.Webhooks.FirstOrDefaultAsync(
-				webhook => webhook.BotTokenCache == botToken);
+				webhook => webhook.BotToken == botToken);
 		}
 
 		public async Task<TelegramBotWebhookInfo> SetAsync(TelegramBotWebhookInfo webhook)
@@ -49,10 +44,10 @@ namespace IntegorTelegramBotListeningServices.Bots
 			return webhook;
 		}
 
-		public async Task<TelegramBotWebhookInfo?> DeleteAsync(int webhookId)
+		public async Task<TelegramBotWebhookInfo?> DeleteAsync(string botToken)
 		{
 			TelegramBotWebhookInfo? oldWebhook =
-				await _context.Webhooks.GetReruiredByIdAsync(webhookId);
+				await _context.Webhooks.GetReruiredByBotTokenAsync(botToken);
 
 			if (oldWebhook == null)
 				return null;
@@ -68,7 +63,7 @@ namespace IntegorTelegramBotListeningServices.Bots
 			TelegramBotWebhookInfo webhook =
 				await _context.Webhooks.GetReruiredByIdAsync(webhookId);
 
-			webhook.BotTokenCache = newToken;
+			webhook.BotToken = newToken;
 
 			_context.Webhooks.Update(webhook);
 			await _context.SaveChangesAsync();

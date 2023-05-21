@@ -88,14 +88,6 @@ namespace IntegorTelegramBotListeningService
 			// Configuring infrastructure
 			services.AddSingleton<IJsonSerializerOptionsProvider, StandardJsonSerializerOptionsProvider>();
 
-			services.AddCors(options =>
-			{
-				options.AddDefaultPolicy(builder => builder
-					.AllowAnyOrigin()
-					.AllowAnyHeader()
-					.AllowAnyMethod());
-			});
-
 			services.AddControllers().AddJsonOptions(options =>
 			{
 				IJsonSerializerOptionsProvider optionsProvider = services
