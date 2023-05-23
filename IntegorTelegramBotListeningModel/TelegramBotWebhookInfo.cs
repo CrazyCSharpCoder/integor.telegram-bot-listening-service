@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace IntegorTelegramBotListeningModel
 {
@@ -14,6 +15,6 @@ namespace IntegorTelegramBotListeningModel
 		public int Id { get; set; }
 		public string Url { get; set; } = null!;
 
-		public int BotId { get; set; }
+		public string BotToken { get; set; } = null!;
 	}
 }

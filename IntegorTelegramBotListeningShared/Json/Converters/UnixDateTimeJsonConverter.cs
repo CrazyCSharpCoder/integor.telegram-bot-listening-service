@@ -20,7 +20,7 @@ namespace IntegorTelegramBotListeningShared.Json.Converters
 
 		public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
 		{
-			int unixSeconds = (value - _unixTimeStart).Seconds;
+			int unixSeconds = (int)(value - _unixTimeStart).TotalSeconds;
 			writer.WriteNumberValue(unixSeconds);
 		}
 	}

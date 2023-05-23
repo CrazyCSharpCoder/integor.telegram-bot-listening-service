@@ -2,57 +2,44 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 
-using AutoMapper;
+using System.Net.Http;
+using System.Net.Http.Json;
+
+using Microsoft.Extensions.Options;
+
+using ExternalServicesConfiguration;
 
 using IntegorTelegramBotListeningDto;
-
-using IntegorTelegramBotListeningShared.EventsAggregation;
 using IntegorTelegramBotListeningShared.ApiAggregation.Aggregators;
 
 namespace IntegorTelegramBotListeningServices.ApiAggregation.Aggregators
 {
-	using Internal.Aggregators;
-
     public class StandardTelegramBotLongPollingAggregator : ITelegramBotLongPollingAggregator
     {
-		private IMessagesAggregationService _messagesAggregator;
-		private EventsAggregationHelper _aggregationHelper;
+		private IntegorDataServiceConfiguration _dataServiceConfiguration;
 
-        public StandardTelegramBotLongPollingAggregator(
-            IChatsAggregationService chatsAggregator,
-            IUsersAggregationService usersAggregator,
-            IMessagesAggregationService messagesAggregator,
-
-            IMapper mapper)
-        {
-			_messagesAggregator = messagesAggregator;
-			_aggregationHelper = new EventsAggregationHelper(
-				chatsAggregator, usersAggregator, messagesAggregator, mapper);
-		}
-
-        public async Task AggregateAsync(IEnumerable<TelegramUpdateDto> updates, int botId)
-        {
-			IEnumerable<TelegramMessageInfoDto> messages = updates
-				.Select(update => update.Message)
-				.Where(message => message != null)!;
-
-			IEnumerable<Task> aggregateTasks = messages.Select(
-				message => AggregateIfNewAsync(message, botId));
-
-			await Task.WhenAll(aggregateTasks);
-        }
-
-		private async Task AggregateIfNewAsync(TelegramMessageInfoDto message, int botId)
+		public StandardTelegramBotLongPollingAggregator(
+			IOptions<IntegorDataServiceConfiguration> dataServiceOptions)
 		{
-			if (!await MessageExistsAsync(message))
-				await _aggregationHelper.AggregateMessageAsync(message, botId);
+			_dataServiceConfiguration = dataServiceOptions.Value;
 		}
 
-		private async Task<bool> MessageExistsAsync(TelegramMessageInfoDto message)
-			=> await _messagesAggregator.GetAsync(message!.Chat.Id, message.MessageId) != null;
+		public async Task AggregateAsync(IEnumerable<TelegramUpdateDto> updates, int botId)
+		{
+			Uri uri = new Uri(_dataServiceConfiguration.Url);
+			uri = new Uri(uri, $"telegram-events/aggregate-many/{botId}");
 
+			using HttpContent content = JsonContent.Create(updates);
+			using HttpRequestMessage request =
+				new HttpRequestMessage(HttpMethod.Post, uri.AbsoluteUri)
+				{
+					Content = content
+				};
+
+			using HttpClient client = new HttpClient();
+			await client.SendAsync(request);
+		}
 	}
 }

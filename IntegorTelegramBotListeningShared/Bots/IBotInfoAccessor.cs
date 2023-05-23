@@ -8,12 +8,8 @@ using IntegorTelegramBotListeningDto;
 
 namespace IntegorTelegramBotListeningShared.Bots
 {
-    public interface IBotsManagementService
+    public interface IBotInfoAccessor
     {
-        Task<TelegramBotInfoDto> AddAsync(TelegramBotInfoDto bot);
-        Task<TelegramBotInfoDto> UpdateAsync(TelegramBotInfoDto bot);
-
-        Task<TelegramBotInfoDto?> GetByIdAsync(int id);
         Task<TelegramBotInfoDto?> GetByTokenAsync(string botToken);
     }
 }

@@ -5,7 +5,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace IntegorTelegramBotListeningServices.Migrations
 {
-    public partial class AddWebhook : Migration
+    public partial class Initial : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -16,23 +16,17 @@ namespace IntegorTelegramBotListeningServices.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Url = table.Column<string>(type: "text", nullable: false),
-                    BotId = table.Column<int>(type: "integer", nullable: false)
+                    BotToken = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Webhooks", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Webhooks_Bots_BotId",
-                        column: x => x.BotId,
-                        principalTable: "Bots",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Webhooks_BotId",
+                name: "IX_Webhooks_BotToken",
                 table: "Webhooks",
-                column: "BotId",
+                column: "BotToken",
                 unique: true);
         }
 

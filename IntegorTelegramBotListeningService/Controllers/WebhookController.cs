@@ -8,6 +8,12 @@ using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
+using IntegorErrorsHandling;
+using IntegorErrorsHandling.Filters;
+using IntegorErrorsHandling.Converters;
+
+using IntegorSharedResponseDecorators.Shared.Attributes;
+
 using IntegorTelegramBotListeningModel;
 
 using IntegorTelegramBotListeningDto;
@@ -28,6 +34,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 	using Filters;
 	using Helpers;
 
+	using Settings.ErrorMessages;
+
 	[ApiController]
 	[Route("bot{botToken}")]
 	public class WebhookController : ControllerBase
@@ -39,6 +47,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 		private TelegramBotListeningServiceConfiguration _serviceConfiguration;
 
+		private IStringErrorConverter _stringError;
+
 		private HttpRequestHelper _requestHelper;
 
 		private IJsonSerializerOptionsProvider _jsonOptionsProvider;
@@ -48,7 +58,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 		private IBotApiHttpContentFactory _contentFactory;
 		private IHttpResponseMessageToHttpResponseAssigner _responseToAsp;
 
-		private IBotsManagementService _botsManagement;
+		private IBotInfoAccessor _botAccessor;
 		private IBotWebhookManagementService _botWebhooksManagement;
 
 		private IWebhookUpdateDeserializer _updatesDeserializer;
@@ -56,6 +66,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 		public WebhookController(
 			IOptions<TelegramBotListeningServiceConfiguration> serviceOptions,
+
+			IStringErrorConverter stringError,
 
 			HttpRequestHelper requestHelper,
 
@@ -66,13 +78,15 @@ namespace IntegorTelegramBotListeningService.Controllers
 			IBotApiHttpContentFactory contentFactory,
 			IHttpResponseMessageToHttpResponseAssigner responseToAsp,
 
-			IBotsManagementService botsManagement,
+			IBotInfoAccessor botsManagement,
 			IBotWebhookManagementService botWebhooksManagement,
 
 			IWebhookUpdateDeserializer updatesDeserializer,
 			ITelegramBotWebhookAggregator updatesAggregator)
 		{
 			_serviceConfiguration = serviceOptions.Value;
+
+			_stringError = stringError;
 
 			_requestHelper = requestHelper;
 
@@ -83,22 +97,30 @@ namespace IntegorTelegramBotListeningService.Controllers
 			_contentFactory = contentFactory;
 			_responseToAsp = responseToAsp;
 
-			_botsManagement = botsManagement;
+			_botAccessor = botsManagement;
 			_botWebhooksManagement = botWebhooksManagement;
 
 			_updatesDeserializer = updatesDeserializer;
 			_updatesAggregator = updatesAggregator;
 		}
 
+		[ExceptionHandling]
 		[Route("setWebhook")]
+		[DecorateErrorsResponse]
+		[ExtensibleExceptionHandlingLazyFilterFactory]
 		[ServiceFilter(typeof(EntityFrameworkTransactionFilter))]
-		public async Task SetWebhookAsync(string botToken, TelegramWebhookDto webhookDto)
+		public async Task<IActionResult> SetWebhookAsync(string botToken, TelegramWebhookDto webhookDto)
 		{
-			TelegramBotInfoDto? bot = await _botsManagement.GetByTokenAsync(botToken);
+			// TODO get using IntegorServicesInteractionHelpers and show errors
+			TelegramBotInfoDto? bot = await _botAccessor.GetByTokenAsync(botToken);
 
 			if (bot == null)
-				// TODO return error
-				throw new System.Exception("Bot with specified id is not registered");
+			{
+				IErrorConvertationResult error = _stringError.Convert(
+					BotErrorMessages.BotWithIdDoesNotExist)!;
+
+				return BadRequest(error);
+			}
 
 			// Webhook, отправляемый на Telegram Bot API, устанавливается на метод контроллера 
 			// TranslateWebhookAsync, который отправляет новый webhook боту
@@ -115,8 +137,9 @@ namespace IntegorTelegramBotListeningService.Controllers
 			// webhook к боту, что явялется ошибкой
 			TelegramBotWebhookInfo webhook = new TelegramBotWebhookInfo()
 			{
-				BotId = bot.Id,
-				Url = botUrl
+				Id = bot.Id,
+				Url = botUrl,
+				BotToken = botToken
 			};
 			await _botWebhooksManagement.SetAsync(webhook);
 
@@ -126,21 +149,30 @@ namespace IntegorTelegramBotListeningService.Controllers
 				botToken, _setWebhookApiMethod);
 
 			if (!response.IsSuccessStatusCode)
-				await _botWebhooksManagement.DeleteAsync(bot.Id);
+				await _botWebhooksManagement.DeleteAsync(botToken);
 
 			await _responseToAsp.AssignAsync(Response, response);
+
+			return new EmptyResult();
 		}
 
+		[ExceptionHandling]
 		[Route("deleteWebhook")]
+		[DecorateErrorsResponse]
+		[ExtensibleExceptionHandlingLazyFilterFactory]
 		[ServiceFilter(typeof(EntityFrameworkTransactionFilter))]
-		public async Task DeleteWebhookAsync(string botToken, DeleteWebhookDto deleteDto)
+		public async Task<IActionResult> DeleteWebhookAsync(string botToken, DeleteWebhookDto deleteDto)
 		{
 			// TODO accept DeleteWebhookDto from query string in snake case notation
-			TelegramBotInfoDto? bot = await _botsManagement.GetByTokenAsync(botToken);
+			TelegramBotInfoDto? bot = await _botAccessor.GetByTokenAsync(botToken);
 
 			if (bot == null)
-				// TODO return error
-				throw new System.Exception("Bot with specified id is not registered");
+			{
+				IErrorConvertationResult error = _stringError.Convert(
+					BotErrorMessages.BotWithIdDoesNotExist)!;
+
+				return BadRequest(error);
+			}
 
 			using HttpContent httpContent = _contentFactory.CreateJsonContent(deleteDto);
 			using HttpResponseMessage response = await _api.SendAsync(
@@ -149,13 +181,16 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 			if (response.IsSuccessStatusCode)
 			{
-				TelegramBotWebhookInfo? webhook = await _botWebhooksManagement.GetAsync(bot.Id);
+				TelegramBotWebhookInfo? webhook =
+					await _botWebhooksManagement.GetByBotTokenAsync(botToken);
 
 				if (webhook != null)
-					await _botWebhooksManagement.DeleteAsync(bot.Id);
+					await _botWebhooksManagement.DeleteAsync(botToken);
 			}
 
 			await _responseToAsp.AssignAsync(Response, response);
+
+			return new EmptyResult();
 		}
 
 		// TODO create own class for webhook info with additional information about
@@ -167,30 +202,39 @@ namespace IntegorTelegramBotListeningService.Controllers
 
 		//}
 
+		[ExceptionHandling]
+		[DecorateErrorsResponse]
+		[ExtensibleExceptionHandlingLazyFilterFactory]
 		[HttpPost(_translateWebhookControllerPath)]
 		[ServiceFilter(typeof(EntityFrameworkTransactionFilter))]
-		public async Task TranslateWebhookAsync(string botToken)
+		public async Task<IActionResult> TranslateWebhookAsync(string botToken)
 		{
-			TelegramBotInfoDto? bot = await _botsManagement.GetByTokenAsync(botToken);
+			TelegramBotInfoDto? bot = null;
 
-			if (bot == null)
-				// TODO consider in what situations it can happen and handle errors
-				throw new System.Exception();
+			try { bot = await _botAccessor.GetByTokenAsync(botToken); }
+			catch { /* Ignore */ }
 
-			TelegramBotWebhookInfo? webhook = await _botWebhooksManagement.GetAsync(bot.Id);
+			TelegramBotWebhookInfo? webhook = await _botWebhooksManagement.GetByBotTokenAsync(botToken);
 
 			if (webhook == null)
-				// TODO consider in what situations it can happen and handle errors
-				throw new System.Exception();
+			{
+				IErrorConvertationResult error = _stringError.Convert(
+					"Webhook was not set via the service")!;
+
+				return BadRequest(error);
+			}
 
 			HttpContent content;
 
-			if (IsApplicationJson(Request))
+			// Если формат данных json, и бот был раннее получен от сервиса с данными
+			// (то есть не было проблем с соединением)
+			if (bot != null && IsApplicationJson(Request))
 			{
 				JsonSerializerOptions jsonOptions = _jsonOptionsProvider.GetJsonSerializerOptions();
 				JsonElement jsonBody = await JsonSerializer.DeserializeAsync<JsonElement>(Request.Body, options: jsonOptions);
 
-				await AggregateWebhookAsync(jsonBody, bot.Id);
+				try { await AggregateWebhookAsync(jsonBody, bot.Id); }
+				catch { /* Ignore */ }
 
 				content = _contentFactory.CreateJsonContent(jsonBody);
 			}
@@ -203,6 +247,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 				await _webhookInvoker.InvokeWebhookAsync(webhook.Url, content);
 
 			await _responseToAsp.AssignAsync(Response, response);
+
+			return new EmptyResult();
 		}
 
 		private string ComposeUrlOfWebhook(string botToken)
