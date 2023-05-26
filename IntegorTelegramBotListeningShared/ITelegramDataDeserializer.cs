@@ -5,10 +5,10 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace IntegorTelegramBotListeningShared.ApiAggregation
+namespace IntegorTelegramBotListeningShared
 {
-	public interface ITelegramDataDeserializer<T>
-	{
-		T? Deserialize(JsonElement body);
-	}
+    public interface ITelegramDataDeserializer<T>
+    {
+        T? Deserialize(JsonElement body);
+    }
 }

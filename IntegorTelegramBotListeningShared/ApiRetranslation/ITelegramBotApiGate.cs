@@ -10,7 +10,7 @@ namespace IntegorTelegramBotListeningShared.ApiRetranslation
     public interface ITelegramBotApiGate
     {
         Task<HttpResponseMessage> SendAsync(
-            HttpContent content,
+            HttpContent? content,
             HttpMethod httpMethod,
             string botToken, string apiMethod, Dictionary<string, string>? queryParameters = null);
     }

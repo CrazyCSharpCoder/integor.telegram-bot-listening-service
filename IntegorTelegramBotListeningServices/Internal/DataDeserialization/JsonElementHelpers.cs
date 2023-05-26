@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace IntegorTelegramBotListeningServices.ApiAggregation.Internal.DataDeserialization
+namespace IntegorTelegramBotListeningServices.Internal.DataDeserialization
 {
     internal static class JsonElementHelpers
     {

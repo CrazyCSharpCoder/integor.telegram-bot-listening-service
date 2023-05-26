@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IntegorTelegramBotListeningDto.Webhook
 {
-	public class TelegramWebhookDto
+	public class TelegramSetWebhookDto
 	{
 		// TODO добавить остальной функционал
 

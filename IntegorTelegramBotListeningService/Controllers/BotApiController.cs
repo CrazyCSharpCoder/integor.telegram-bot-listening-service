@@ -16,16 +16,15 @@ using IntegorTelegramBotListeningShared.Bots;
 
 using IntegorTelegramBotListeningShared.ApiRetranslation;
 using IntegorTelegramBotListeningShared.ApiRetranslation.ApiContent;
-
-using IntegorTelegramBotListeningShared.ApiAggregation.DataDeserialization;
 using IntegorTelegramBotListeningShared.ApiAggregation.Aggregators;
 
 namespace IntegorTelegramBotListeningService.Controllers
 {
     using Filters;
     using Helpers;
+    using IntegorTelegramBotListeningShared.DataDeserialization;
 
-	[ApiController]
+    [ApiController]
 	public class BotApiController : ControllerBase
 	{
 		private const string _getUpdatesApiMethodName = "getUpdates";

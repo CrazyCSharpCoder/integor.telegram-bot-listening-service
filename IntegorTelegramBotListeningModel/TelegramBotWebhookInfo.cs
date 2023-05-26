@@ -5,7 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+
+using IntegorLogicShared.Database.Attributes;
 
 namespace IntegorTelegramBotListeningModel
 {
@@ -16,5 +17,8 @@ namespace IntegorTelegramBotListeningModel
 		public string Url { get; set; } = null!;
 
 		public string BotToken { get; set; } = null!;
+
+		[CreatedTime]
+		public DateTime CreatedDate { get; set; }
 	}
 }

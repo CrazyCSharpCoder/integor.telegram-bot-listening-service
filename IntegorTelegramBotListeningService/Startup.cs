@@ -25,25 +25,27 @@ using IntegorTelegramBotListeningShared.ApiRetranslation;
 using IntegorTelegramBotListeningShared.ApiRetranslation.ApiContent;
 
 using IntegorTelegramBotListeningShared.ApiAggregation.Aggregators;
-using IntegorTelegramBotListeningShared.ApiAggregation.DataDeserialization;
+
+using IntegorTelegramBotListeningShared.DataDeserialization;
 
 using IntegorTelegramBotListeningServices;
 using IntegorTelegramBotListeningServices.ApiRetranslation;
 using IntegorTelegramBotListeningServices.ApiRetranslation.ApiContent;
+using IntegorTelegramBotListeningServices.DataDeserialization;
 
 using IntegorTelegramBotListeningServices.Bots;
 using IntegorTelegramBotListeningServices.EntityFramework;
 
 using IntegorTelegramBotListeningServices.ObjectParsers;
 using IntegorTelegramBotListeningServices.ApiAggregation.Aggregators;
-using IntegorTelegramBotListeningServices.ApiAggregation.DataDeserialization;
 
 namespace IntegorTelegramBotListeningService
 {
     using Filters;
     using Helpers;
+    using Mapper.Profiles;
 
-	public class Startup
+    public class Startup
 	{
 		public IConfiguration Configuration { get; }
 
@@ -101,6 +103,16 @@ namespace IntegorTelegramBotListeningService
 			services.AddHttpContextAccessor();
 			services.AddDefaultStatusCodeResponseBodyFactory();
 
+			services.AddCors(options =>
+			{
+				options.AddDefaultPolicy(builder => builder
+					.AllowAnyOrigin()
+					.AllowAnyHeader()
+					.AllowAnyMethod());
+			});
+
+			services.AddAutoMapper(typeof(WebhookMapperProfile));
+
 			// Configuring options
 			services.Configure<TelegramBotListeningServiceConfiguration>(_telegramBotListeningServiceConfiguration);
 			services.Configure<TelegramBotApiConfiguration>(_telegramBotApiConfiguration);
@@ -114,6 +126,7 @@ namespace IntegorTelegramBotListeningService
 			services.AddSingleton<ITelegramBotApiGate, StandardTelegramBotApiGate>();
 			services.AddSingleton<IWebhookInvoker, StandardWebhookInvoker>();
 			services.AddSingleton<IHttpResponseMessageToHttpResponseAssigner, StandardHttpResponseMessageToHttpResponseAssigner>();
+			services.AddSingleton<ITelegramWebhookApi, StandardTelegramWebhookApi>();
 
 			services.AddDbContext<IntegorTelegramBotListeningDataContext>(
 				options =>
@@ -129,6 +142,7 @@ namespace IntegorTelegramBotListeningService
 			// Configuring aggregation services
 			services.AddScoped<IWebhookUpdateDeserializer, StandardWebhookUpdateDeserializer>();
 			services.AddScoped<ILongPollingUpdatesDeserializer, StandardLongPollingUpdatesDeserializer>();
+			services.AddScoped<IWebhookInfoDeserializer, StandardWebhookInfoDeserializer>();
 
 			services.AddScoped<ITelegramBotLongPollingAggregator, StandardTelegramBotLongPollingAggregator>();
 			services.AddScoped<ITelegramBotWebhookAggregator, StandardTelegramBotWebhookAggregator>();

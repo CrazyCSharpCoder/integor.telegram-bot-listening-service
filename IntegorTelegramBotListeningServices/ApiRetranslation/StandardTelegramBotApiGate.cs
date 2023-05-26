@@ -18,7 +18,7 @@ namespace IntegorTelegramBotListeningServices.ApiRetranslation
             _uriBuilder = uriBuilder;
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpContent content, HttpMethod httpMethod, string botToken, string apiMethod, Dictionary<string, string>? queryParameters = null)
+        public async Task<HttpResponseMessage> SendAsync(HttpContent? content, HttpMethod httpMethod, string botToken, string apiMethod, Dictionary<string, string>? queryParameters = null)
         {
             string uri = _uriBuilder.CreateUri(botToken, apiMethod, queryParameters);
 
