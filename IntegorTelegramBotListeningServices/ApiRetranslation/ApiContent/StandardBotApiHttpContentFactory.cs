@@ -28,7 +28,7 @@ namespace IntegorTelegramBotListeningServices.ApiRetranslation.ApiContent
         public HttpContent CreateMultipartFormContent(
             IEnumerable<MultipartFormContentDescriptor> contentParts, string boundary)
         {
-            MultipartFormDataContent content = new MultipartFormDataContent(boundary);
+			MultipartFormDataContent content = new MultipartFormDataContent(boundary);
 
             foreach (MultipartFormContentDescriptor contentPart in contentParts)
             {
@@ -49,8 +49,8 @@ namespace IntegorTelegramBotListeningServices.ApiRetranslation.ApiContent
 
             return content;
         }
-
-        public HttpContent CreateDefaultContent(Stream body, string? mediaType)
+		
+		public HttpContent CreateDefaultContent(Stream body, string? mediaType)
         {
             HttpContent content = new StreamContent(body);
 

@@ -29,21 +29,26 @@ using IntegorTelegramBotListeningShared.ApiAggregation.Aggregators;
 using IntegorTelegramBotListeningShared.DataDeserialization;
 
 using IntegorTelegramBotListeningServices;
+using IntegorTelegramBotListeningServices.Bots;
+
 using IntegorTelegramBotListeningServices.ApiRetranslation;
 using IntegorTelegramBotListeningServices.ApiRetranslation.ApiContent;
-using IntegorTelegramBotListeningServices.DataDeserialization;
-
-using IntegorTelegramBotListeningServices.Bots;
-using IntegorTelegramBotListeningServices.EntityFramework;
+using IntegorTelegramBotListeningServices.ApiAggregation.Aggregators;
 
 using IntegorTelegramBotListeningServices.ObjectParsers;
-using IntegorTelegramBotListeningServices.ApiAggregation.Aggregators;
+using IntegorTelegramBotListeningServices.DataDeserialization;
+
+using IntegorTelegramBotListeningServices.EntityFramework;
+
+using IntegorTelegramBotListeningServices.MultipartNamesEncoding;
+using IntegorTelegramBotListeningServices.MultipartNamesEncoding.Implementations;
 
 namespace IntegorTelegramBotListeningService
 {
     using Filters;
     using Helpers;
-    using Mapper.Profiles;
+	
+	using Mapper.Profiles;
 
     public class Startup
 	{
@@ -134,6 +139,8 @@ namespace IntegorTelegramBotListeningService
 					options.UseNpgsql(Configuration.GetConnectionString("IntegorTelegramBotEventsDatabase"));
 					options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 				});
+
+			services.AddMultipartFileNamesEncoding(typeof(CyrillicMultipartFileNameEncoder));
 
 			// Configuring data logic services
 			services.AddScoped<IBotInfoAccessor, DataServiceBotInfoAccessor>();
