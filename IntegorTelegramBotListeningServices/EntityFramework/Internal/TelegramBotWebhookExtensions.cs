@@ -13,11 +13,11 @@ namespace IntegorTelegramBotListeningServices.EntityFramework.Internal
 	internal static class TelegramBotWebhookExtensions
 	{
 		public static Task<TelegramBotWebhookInfo?> GetByIdAsync(
-			this IQueryable<TelegramBotWebhookInfo> webhooks, int webhookId)
+			this IQueryable<TelegramBotWebhookInfo> webhooks, long webhookId)
 			=> webhooks.FirstOrDefaultAsync(webhook => webhook.Id == webhookId);
 
 		public static Task<TelegramBotWebhookInfo> GetReruiredByIdAsync(
-			this IQueryable<TelegramBotWebhookInfo> webhooks, int webhookId)
+			this IQueryable<TelegramBotWebhookInfo> webhooks, long webhookId)
 			=> webhooks.FirstAsync(webhook => webhook.Id == webhookId);
 
 		public static Task<TelegramBotWebhookInfo?> GetByBotTokenAsync(

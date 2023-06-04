@@ -8,7 +8,7 @@ namespace IntegorTelegramBotListeningDto
 {
 	public class TelegramBotInfoDto
 	{
-		public int Id { get; set; }
+		public long Id { get; set; }
 
 		public string Title { get; set; } = null!;
 		public string Token { get; set; } = null!;

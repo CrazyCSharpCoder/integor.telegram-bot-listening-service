@@ -8,6 +8,6 @@ namespace IntegorTelegramBotListeningShared.ApiAggregation
 {
 	public interface ITelegramApiAggregator<T>
 	{
-		Task AggregateAsync(T data, int botId);
+		Task AggregateAsync(T data, long botId);
 	}
 }

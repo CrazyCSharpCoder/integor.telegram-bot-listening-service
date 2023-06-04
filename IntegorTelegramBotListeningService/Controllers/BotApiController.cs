@@ -95,7 +95,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 				return;
 			}
 
-			int? botId = await GetBotIdSafeAsync(botToken);
+			long? botId = await GetBotIdSafeAsync(botToken);
 
 			if (botId == null || !IsApplicationJson(response.Content))
 			{
@@ -127,7 +127,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 				response.StatusCode, responseContent, response.Headers);
 		}
 
-		private async Task<int?> GetBotIdSafeAsync(string botToken)
+		private async Task<long?> GetBotIdSafeAsync(string botToken)
 		{
 			try
 			{
@@ -139,7 +139,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 			}
 		}
 
-		private async Task AggregateUpdatesAsync(JsonElement updatesJson, int botId)
+		private async Task AggregateUpdatesAsync(JsonElement updatesJson, long botId)
 		{
 			IEnumerable<TelegramUpdateDto>? updates;
 

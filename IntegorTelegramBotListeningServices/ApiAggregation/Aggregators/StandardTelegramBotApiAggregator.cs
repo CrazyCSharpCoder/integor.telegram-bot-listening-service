@@ -52,7 +52,7 @@ namespace IntegorTelegramBotListeningServices.ApiAggregation.Aggregators
 			return apiMethod.ToLower() == _sendMessageMethod.ToLower();
 		}
 
-		public async Task AggregateAsync(JsonElement data, int botId)
+		public async Task AggregateAsync(JsonElement data, long botId)
 		{
 			if (!data.TryGetProperty("result", out JsonElement jsonMessage))
 				return;

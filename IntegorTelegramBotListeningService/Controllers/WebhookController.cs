@@ -320,7 +320,7 @@ namespace IntegorTelegramBotListeningService.Controllers
 				_serviceConfiguration.HostedUrl,
 				$"bot{botToken}", _translateWebhookControllerPath);
 
-		private async Task AggregateWebhookAsync(JsonElement jsonBody, int botId)
+		private async Task AggregateWebhookAsync(JsonElement jsonBody, long botId)
 		{
 			TelegramUpdateDto? update;
 

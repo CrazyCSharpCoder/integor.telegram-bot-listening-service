@@ -26,7 +26,7 @@ namespace IntegorTelegramBotListeningServices.ApiAggregation.Aggregators
 			_dataServiceConfiguration = dataServiceOptions.Value;
         }
 
-        public async Task AggregateAsync(TelegramUpdateDto update, int botId)
+        public async Task AggregateAsync(TelegramUpdateDto update, long botId)
 		{
 			Uri uri = new Uri(_dataServiceConfiguration.Url);
 			uri = new Uri(uri, $"telegram-events/aggregate-single/{botId}");
