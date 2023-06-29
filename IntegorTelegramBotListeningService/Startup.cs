@@ -108,14 +108,6 @@ namespace IntegorTelegramBotListeningService
 			services.AddHttpContextAccessor();
 			services.AddDefaultStatusCodeResponseBodyFactory();
 
-			services.AddCors(options =>
-			{
-				options.AddDefaultPolicy(builder => builder
-					.AllowAnyOrigin()
-					.AllowAnyHeader()
-					.AllowAnyMethod());
-			});
-
 			services.AddAutoMapper(typeof(WebhookMapperProfile));
 
 			// Configuring options
@@ -166,7 +158,6 @@ namespace IntegorTelegramBotListeningService
 			app.UseWebApiStatusCodesHandling();
 
 			app.UseRouting();
-			app.UseCors();
 			app.UseEndpoints(endpoints =>
 			{
 				endpoints.MapControllers();

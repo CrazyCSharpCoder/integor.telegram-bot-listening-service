@@ -60,8 +60,9 @@ namespace IntegorTelegramBotListeningServices.ApiAggregation.Aggregators
 			JsonSerializerOptions jsonOptions = _jsonOptionsProvider.GetJsonSerializerOptions();
 			TelegramMessageInfoDto aggregatedMessage = jsonMessage.Deserialize<TelegramMessageInfoDto>(jsonOptions)!;
 
-			ServiceResponse<TelegramMessageInfoDto> response = await _requestProcessor.ProcessAsync(
-				_messageParser, HttpMethod.Post, $"bot-{botId}/message", dtoBody: aggregatedMessage);
+			await _requestProcessor.ProcessAsync(
+				_messageParser, HttpMethod.Post,
+				$"bot-{botId}/message", dtoBody: aggregatedMessage);
 		}
 	}
 }

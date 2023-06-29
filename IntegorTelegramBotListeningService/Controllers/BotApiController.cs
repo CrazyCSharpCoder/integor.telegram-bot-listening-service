@@ -75,8 +75,8 @@ namespace IntegorTelegramBotListeningService.Controllers
 			_apiAggregator = apiAggregator;
 		}
 
-		[Route("bot{botToken}/{apiMethod}")]
 		[IgnoreExceptionFilter]
+		[Route("bot{botToken}/{apiMethod}")]
 		[ServiceFilter(typeof(EntityFrameworkTransactionFilter))]
 		public async Task ListenToBotAsync(string botToken, string apiMethod)
 		{

@@ -35,7 +35,7 @@ namespace IntegorTelegramBotListeningServices.Bots
         {
 			_botParser = botParser;
 			_requestProcessor = new JsonServicesRequestProcessor<IntegorDataServiceConfiguration>(
-				errorsParser, dataServiceOptions, "bots");
+				errorsParser, dataServiceOptions, "bots/unsafe");
 		}
 
 		public async Task<TelegramBotInfoDto?> GetByTokenAsync(string botToken)

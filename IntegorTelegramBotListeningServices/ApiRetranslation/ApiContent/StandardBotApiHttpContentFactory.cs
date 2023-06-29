@@ -43,7 +43,6 @@ namespace IntegorTelegramBotListeningServices.ApiRetranslation.ApiContent
 
                 addedContent.Headers.ContentDisposition = contentDisposition;
 
-                // TODO научиться сохранять имена на кириллице
                 content.Add(addedContent);
             }
 
